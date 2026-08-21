@@ -2827,5 +2827,131 @@ kbd {
   margin-top: 10px;
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN & ADAPTIVE VIEWPORTS (iPhone, iPad, PC)
+   ========================================================================== */
+
+/* iOS Safari Safe Area Inset Support */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .app-header {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    height: calc(56px + max(0px, env(safe-area-inset-top)));
+  }
+
+  .mobile-frame {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 📱 1. Mobile Phones (iPhone & Android: <= 600px) */
+@media (max-width: 600px) {
+  html, body, .mobile-wrapper-body {
+    height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .mobile-frame {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .desktop-nav-bar {
+    display: none !important;
+  }
+
+  .pc-brand-header {
+    display: none !important;
+  }
+
+  .user-badge {
+    display: flex !important;
+  }
+
+  .landing-showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .landing-main-title {
+    font-size: 2.4rem;
+  }
+
+  .video-arena-split {
+    flex-direction: column;
+  }
+
+  .btn-landing-cta, .btn-action-primary, .btn-action-hero {
+    min-height: 48px;
+  }
+}
+
+/* 📱 2. Tablets & iPad (601px - 1024px) */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .mobile-frame {
+    width: 94vw !important;
+    max-width: 768px !important;
+    height: 94vh !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden;
+  }
+
+  .desktop-nav-bar {
+    display: flex !important;
+    gap: 8px;
+  }
+
+  .desktop-nav-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .landing-showcase-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .landing-main-title {
+    font-size: 3rem;
+  }
+}
+
+/* 🖥️ 3. PC & Desktop Screens (>= 1025px) */
+@media (min-width: 1025px) {
+  .mobile-frame {
+    width: 92vw !important;
+    max-width: 1360px !important;
+    height: 92vh !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.08) !important;
+  }
+
+  .desktop-nav-bar {
+    display: flex !important;
+    gap: 12px;
+  }
+
+  .pc-brand-header {
+    display: flex !important;
+  }
+
+  .landing-showcase-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .landing-main-title {
+    font-size: 3.8rem;
+  }
+}
+
 
 
