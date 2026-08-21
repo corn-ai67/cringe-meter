@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>CRINGE METER — How much cringe can you handle?</title>
+  <meta name="description" content="CRINGE METER is a competitive live social game where two strangers match up to play Don't Laugh." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="mobile-wrapper-body">
+
+  <!-- Desktop Mobile Phone Frame Container -->
+  <div class="mobile-frame" id="mobileFrame">
+    <!-- Top App Banner / Mode Badge -->
+    <header class="app-header" id="appHeader">
+      <!-- PC Desktop Brand Logo (visible on PC) -->
+      <div class="pc-brand-header">
+        <span class="pc-brand-emoji">🤡</span>
+        <div class="pc-brand-title">CRINGE <span class="glow-text">METER</span></div>
+        <span class="badge neon-badge-sm">PC ARENA</span>
+      </div>
+
+      <!-- User profile badge (Mobile / Compact) -->
+      <div class="user-badge" id="headerProfileBtn">
+        <div class="avatar-sm">
+          <span id="userAvatarEmoji">👤</span>
+        </div>
+        <div class="user-info-sm">
+          <div class="user-name-row">
+            <span class="user-name" id="userNameDisplay">Anonymous</span>
+            <span class="vip-crown-badge hidden" id="headerVipCrown" title="CRINGE VIP Member">👑</span>
+          </div>
+          <div class="user-rank-sub"><span id="userRankText">Guest Player</span></div>
+        </div>
+      </div>
+
+      <!-- PC Desktop Navigation Links -->
+      <nav class="desktop-nav-bar" id="desktopNav">
+        <button class="desktop-nav-btn active" data-view="view-landing">
+          <i data-lucide="sparkles"></i>
+          <span>HOME</span>
+        </button>
+        <button class="desktop-nav-btn" data-view="view-home">
+          <i data-lucide="swords"></i>
+          <span>BATTLES</span>
+        </button>
+        <button class="desktop-nav-btn" data-view="view-modes">
+          <i data-lucide="gamepad-2"></i>
+          <span>ARENA MODES</span>
+        </button>
+        <button class="desktop-nav-btn" data-view="view-leaderboard">
+          <i data-lucide="trophy"></i>
+          <span>LEADERBOARD</span>
+        </button>
+        <button class="desktop-nav-btn" data-view="view-profile">
+          <i data-lucide="user"></i>
+          <span>PROFILE</span>
+        </button>
+      </nav>
+
+      <!-- Currency & Actions HUD -->
+      <div class="currency-hud">
+        <button class="hud-pill make-mine-pill" id="btnHeaderMakeMine" title="Customize Your Cringe Meter">
+          <span class="currency-icon">🎨</span>
+          <span class="make-mine-text">CRINGE STUDIO</span>
+        </button>
+        <div class="hud-pill coins-pill">
+          <span class="currency-icon">🪙</span>
+          <span id="userCoinsDisplay">0</span>
+        </div>
+        <div class="hud-pill streak-pill" title="Current Win Streak">
+          <span class="currency-icon">🔥</span>
+          <span id="userStreakDisplay">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN SCREEN VIEWS CONTAINER -->
+    <main class="views-container" id="viewsContainer">
+
+      <!-- ==================== 0. LANDING SHOWCASE VIEW (191248.png) ==================== -->
+      <section class="view-screen active" id="view-landing">
+        <div class="landing-hero-container">
+          <div class="landing-hero-content">
+            <h1 class="landing-main-title">Cringe<span class="landing-highlight">Meter</span></h1>
+            <p class="landing-hero-tagline">THERE IS NO LIMIT TO THE CRINGE.</p>
+            
+            <div class="landing-social-row">
+              <a href="https://x.com" target="_blank" class="social-icon-btn" title="X / Twitter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="https://instagram.com" target="_blank" class="social-icon-btn" title="Instagram"><i data-lucide="instagram"></i></a>
+              <a href="https://tiktok.com" target="_blank" class="social-icon-btn" title="TikTok"><i data-lucide="music-2"></i></a>
+              <a href="https://discord.com" target="_blank" class="social-icon-btn" title="Discord"><i data-lucide="message-square"></i></a>
+            </div>
+
+            <button class="btn-landing-cta" id="btnLandingBattles">
+              <span>CRINGE BATTLES →</span>
+            </button>
+          </div>
+
+          <!-- 2 Featured Showcase Cards -->
+          <div class="landing-showcase-grid">
+            <!-- Card 1: Cringe Battles -->
+            <div class="landing-feature-card card-battles" id="cardLandingBattles">
+              <div class="card-top-label">
+                <span class="card-title-text">CRINGE BATTLES</span>
+                <span class="badge neon-badge-sm">NEW</span>
+              </div>
+              <div class="card-visual-duel">
+                <div class="duel-art-container">
+                  <div class="duel-avatar-figure figure-left">
+                    <span class="duel-emoji">👤</span>
+                    <span class="duel-name-tag">YOU (Anonymous)</span>
+                  </div>
+                  <div class="duel-vs-circle">VS</div>
+                  <div class="duel-avatar-figure figure-right">
+                    <span class="duel-emoji">🤡</span>
+                    <span class="duel-name-tag">STRANGER</span>
+                  </div>
+                </div>
+                <div class="duel-overlay-info">
+                  <span class="duel-stat-pill">🔥 1v1 LIVE DON'T LAUGH</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Customize Photos / Studio -->
+            <div class="landing-feature-card card-customize" id="cardLandingStudio">
+              <div class="card-top-label">
+                <span class="card-title-text">CUSTOMIZE PHOTOS & THEMES</span>
+              </div>
+              <div class="card-visual-studio">
+                <div class="studio-mini-preview-row">
+                  <div class="studio-preview-tile">
+                    <span class="tile-icon">🎨</span>
+                    <span class="tile-label">THEMES</span>
+                  </div>
+                  <div class="studio-preview-tile">
+                    <span class="tile-icon">📸</span>
+                    <span class="tile-label">AVATARS</span>
+                  </div>
+                  <div class="studio-preview-tile">
+                    <span class="tile-icon">🔊</span>
+                    <span class="tile-label">SOUNDS</span>
+                  </div>
+                </div>
+                <div class="duel-overlay-info">
+                  <span class="duel-stat-pill">✨ CRINGE STUDIO HUB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 1. HOME VIEW ==================== -->
+      <section class="view-screen" id="view-home">
+        <div class="home-hero pc-home-grid">
+
+          <!-- PC LEFT COLUMN: DOSSIER & MODES -->
+          <div class="pc-col-left">
+            <!-- PLAYER STATS DASHBOARD CARD -->
+            <div class="stats-card">
+              <div class="stat-box">
+                <span class="stat-icon">🔥</span>
+                <div class="stat-details">
+                  <span class="stat-val" id="cardStreak">7 Games</span>
+                  <span class="stat-label" data-i18n="win_streak">WIN STREAK</span>
+                </div>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-box">
+                <span class="stat-icon">🏆</span>
+                <div class="stat-details">
+                  <span class="stat-val" id="cardRank">Diamond II</span>
+                  <span class="stat-label" data-i18n="current_rank">CURRENT RANK</span>
+                </div>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-box">
+                <span class="stat-icon">⚡</span>
+                <div class="stat-details">
+                  <span class="stat-val" id="cardLevel">LVL 14</span>
+                  <span class="stat-label">3,420 / 5,000 XP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ACTIVE GAME MODE BANNER -->
+            <div class="mode-selector-card" id="homeModeCard">
+              <div class="mode-info">
+                <span class="mode-status-pill" data-i18n="active_mode_title">ACTIVE MODE</span>
+                <h3 data-i18n="dont_laugh_title">Don't Laugh 🤡 vs 😐</h3>
+                <p data-i18n="dont_laugh_desc">Make them break before timer hits 0:00!</p>
+              </div>
+              <button class="btn-sm btn-ghost" id="btnChangeMode"><span data-i18n="change_mode">Change Mode</span> <i data-lucide="chevron-right"></i></button>
+            </div>
+
+            <!-- PC STUDIO SHORTCUT CARD -->
+            <div class="pc-studio-card">
+              <div class="pc-card-header">
+                <span class="pc-card-badge">🎨 PERSONALIZATION</span>
+              </div>
+              <h4>CRINGE STUDIO HUB</h4>
+              <p>Themes, custom taunts, avatar uploads & audio.</p>
+              <button class="btn-sm btn-primary" id="btnHomeOpenStudio" style="margin-top:8px;width:100%;">
+                <i data-lucide="palette"></i> OPEN STUDIO
+              </button>
+            </div>
+          </div>
+
+          <!-- PC CENTER COLUMN: MAIN BATTLE REACTOR -->
+          <div class="pc-col-center">
+            <div class="brand-badge-row">
+              <span class="badge neon-badge pulse" data-i18n="season_tag">SEASON 1: BREAK THEM</span>
+              <span class="badge mode-tag" data-i18n="active_mode_tag">DON'T LAUGH MODE</span>
+            </div>
+
+            <div class="brand-title-wrap">
+              <h1 class="brand-title">CRINGE <span class="glow-text">METER</span></h1>
+              <p class="brand-tagline" data-i18n="tagline">How much cringe can you handle?</p>
+            </div>
+
+            <!-- HUGE CENTRAL FIND BATTLE BUTTON -->
+            <div class="battle-btn-wrapper">
+              <div class="pulse-ring"></div>
+              <div class="pulse-ring secondary"></div>
+              <button class="btn-find-battle" id="btnFindBattle" title="Find Stranger [SPACE]">
+                <div class="btn-battle-content">
+                  <span class="btn-cringe-icon">⚡</span>
+                  <span class="btn-battle-text" data-i18n="find_battle">FIND STRANGER</span>
+                  <span class="btn-battle-subtext" data-i18n="find_battle_sub">10 SECONDS. DON'T LAUGH.</span>
+                  <kbd class="hotkey-badge-btn">SPACE</kbd>
+                </div>
+              </button>
+            </div>
+
+            <p class="battle-caption" data-i18n="caption">"Find out how much cringe you can handle."</p>
+
+            <!-- MULTIPLAYER LIVE ROOM BUTTONS -->
+            <div class="multiplayer-btn-row">
+              <button class="btn-sm btn-multiplayer" id="btnCreateRoom">
+                <i data-lucide="plus-circle"></i> <span data-i18n="create_room">CREATE ROOM</span>
+              </button>
+              <button class="btn-sm btn-multiplayer" id="btnJoinRoom">
+                <i data-lucide="link"></i> <span data-i18n="join_code">JOIN CODE</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- PC RIGHT COLUMN: LEADERBOARD HIGHLIGHTS & SOUNDBOARD PREVIEW -->
+          <div class="pc-col-right">
+            <div class="pc-lb-card">
+              <div class="pc-card-header">
+                <span class="pc-card-badge">🏆 TOP PERFORMERS</span>
+                <span class="pc-live-dot"><span class="dot-pulse"></span> LIVE</span>
+              </div>
+              <div class="pc-mini-lb-list">
+                <div class="pc-lb-row"><span class="pc-rank-badge gold">#1</span> <span class="pc-lb-name">🤡 GiggleGod_99</span> <strong class="pc-lb-score">98.4%</strong></div>
+                <div class="pc-lb-row"><span class="pc-rank-badge silver">#2</span> <span class="pc-lb-name">💀 StoneFace_X</span> <strong class="pc-lb-score">95.1%</strong></div>
+                <div class="pc-lb-row"><span class="pc-rank-badge bronze">#3</span> <span class="pc-lb-name">👹 CringeDemon</span> <strong class="pc-lb-score">92.8%</strong></div>
+                <div class="pc-lb-row"><span class="pc-rank-badge">#4</span> <span class="pc-lb-name">👽 VoidPoker</span> <strong class="pc-lb-score">89.2%</strong></div>
+              </div>
+              <button class="btn-xs btn-ghost pc-lb-view-all" id="btnHomeViewLeaderboard">View Full Leaderboard →</button>
+            </div>
+
+            <div class="pc-sound-preview-card">
+              <div class="pc-card-header">
+                <span class="pc-card-badge">🔊 PC SOUNDBOARD</span>
+                <span class="pc-hotkey-hint">HOTKEYS 1-4</span>
+              </div>
+              <div class="pc-sound-grid">
+                <button class="btn-tool-pc" data-sound="airhorn"><kbd>1</kbd> 🔊 Airhorn</button>
+                <button class="btn-tool-pc" data-sound="honk"><kbd>2</kbd> 🤡 Honk</button>
+                <button class="btn-tool-pc" data-sound="boing"><kbd>3</kbd> 🤪 Boing</button>
+                <button class="btn-tool-pc" data-sound="evil"><kbd>4</kbd> 😈 Evil</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== 2. MATCHMAKING VIEW ==================== -->
+      <section class="view-screen" id="view-matchmaking">
+        <div class="matchmaking-container">
+          <!-- SEARCHING STATE -->
+          <div class="mm-state" id="mmSearchingState">
+            <div class="radar-spinner">
+              <div class="radar-sweep"></div>
+              <div class="radar-center">🤡</div>
+            </div>
+            <h2 class="mm-title glitch-text" data-text="SEARCHING FOR CRINGE…">SEARCHING FOR STRANGER…</h2>
+            <p class="mm-subtitle">Scanning global servers for unbreakable opponents...</p>
+            <div class="searching-dots">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+            <button class="btn-cancel-mm" id="btnCancelMM">CANCEL SEARCH</button>
+          </div>
+
+          <!-- MATCH FOUND STATE -->
+          <div class="mm-state hidden" id="mmMatchFoundState">
+            <div class="match-found-banner">
+              <span class="match-found-title">MATCH FOUND</span>
+            </div>
+
+            <div class="matchup-row">
+              <div class="player-card player-you">
+                <div class="player-avatar" id="mmAvatarP1">🤡</div>
+                <div class="player-name" id="mmNameP1">You</div>
+                <div class="player-lvl" id="mmLvlP1">LVL 14</div>
+              </div>
+
+              <div class="vs-badge">VS</div>
+
+              <div class="player-card player-opp">
+                <div class="player-avatar" id="mmAvatarP2">🤖</div>
+                <div class="player-name" id="mmNameP2">ShadowGiggle_X</div>
+                <div class="player-lvl" id="mmLvlP2">LVL 16</div>
+              </div>
+            </div>
+
+            <div class="role-reveal-box" id="roleRevealBox">
+              <div class="role-icon" id="roleIcon">🤡</div>
+              <div class="role-title" id="roleTitle">MAKE THEM BREAK 🤡</div>
+              <div class="role-desc" id="roleDesc">You are the PERFORMER! Deliver your AI cringe challenge and make your defender break into laughs.</div>
+              <div class="role-countdown-bar">
+                <div class="role-progress-fill" id="roleProgressFill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 3. BATTLE VIEW ==================== -->
+      <section class="view-screen" id="view-battle">
+        <div class="battle-screen-container">
+          <!-- TOP VISUAL CRINGE METER GAUGE -->
+          <div class="battle-top-hud">
+            <div class="cringe-meter-gauge-wrap">
+              <div class="gauge-header">
+                <span class="gauge-label low-label">LOW</span>
+                <span class="gauge-status-title" id="gaugeStatusText">CRINGE DETECTED</span>
+                <span class="gauge-label critical-label">CRITICAL 💀</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-fill" id="cringeGaugeFill"></div>
+                <div class="gauge-needle" id="cringeGaugeNeedle"></div>
+              </div>
+            </div>
+
+            <div class="battle-timer-bar">
+              <span class="timer-mode-tag">DON'T LAUGH</span>
+              <span class="timer-digits" id="battleTimerDigits">00:10</span>
+            </div>
+          </div>
+
+          <!-- DUAL LIVE VIDEO BATTLE STREAMS -->
+          <div class="video-battle-grid">
+            <div class="video-box opponent-video-box">
+              <div class="video-overlay-tag" id="oppRoleBadge">DEFENDER 😐</div>
+              <div class="video-player-name" id="oppVideoName">ShadowGiggle_X</div>
+              
+              <!-- Real WebRTC Stranger Video Stream -->
+              <video id="remoteVideoFeed" autoplay playsinline webkit-playsinline muted="false" class="remote-cam-feed hidden"></video>
+
+              <!-- Camera Off Placeholder -->
+              <div class="opp-cam-off-placeholder hidden" id="oppCameraOffPlaceholder">
+                <span class="cam-off-icon">🙈</span>
+                <span class="cam-off-title">CAMERA OFF</span>
+                <span class="cam-off-sub">THE STRANGER IS HIDING FROM THE CRINGE</span>
+              </div>
+
+              <!-- Simulated Fallback Avatar -->
+              <div class="simulated-opp-video" id="simulatedOppVideo">
+                <div class="opp-face-emoji" id="oppFaceEmoji">😐</div>
+                <div class="opp-reaction-sub" id="oppReactionSub">Poker Face Active...</div>
+              </div>
+
+              <div class="smile-risk-hud">
+                <span class="risk-label">LAUGH RISK:</span>
+                <div class="risk-bar-track">
+                  <div class="risk-bar-fill" id="smileRiskFill"></div>
+                </div>
+                <span class="risk-val" id="smileRiskVal">12%</span>
+              </div>
+            </div>
+
+            <!-- Self Video Feed (Picture-in-Picture Overlay) -->
+            <div class="video-box self-video-box">
+              <div class="video-overlay-tag" id="selfRoleBadge">PERFORMER 🤡</div>
+              <video id="localVideoFeed" autoplay playsinline webkit-playsinline muted class="local-cam-feed hidden"></video>
+              <div class="cam-fallback" id="camFallback">
+                <span class="cam-fallback-avatar" id="selfCamEmoji">🤡</span>
+                <span class="cam-fallback-text">CAM FEED READY</span>
+              </div>
+              <button class="btn-icon btn-cam-toggle" id="btnToggleCam" title="Toggle Live Webcam">
+                <i data-lucide="camera"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ONLINE MEDIA CONTROLS & NEXT BUTTON -->
+          <div class="online-controls-bar" id="onlineControlsBar">
+            <button class="btn-online-action" id="btnOnlineMuteMic" title="Mute Microphone [M]">
+              <i data-lucide="mic"></i>
+              <kbd class="btn-kbd-mini">M</kbd>
+            </button>
+            <button class="btn-online-action" id="btnOnlineToggleCam" title="Toggle Camera [C]">
+              <i data-lucide="camera"></i>
+              <kbd class="btn-kbd-mini">C</kbd>
+            </button>
+            <button class="btn-online-action btn-report-action" id="btnOpenReportModal" title="Report Stranger"><i data-lucide="flag"></i></button>
+            <button class="btn-online-action btn-block-action" id="btnBlockStranger" title="Block Stranger"><i data-lucide="shield-alert"></i></button>
+            <button class="btn-next-stranger" id="btnNextStranger" title="Skip to next stranger [SPACE]">
+              <span>NEXT →</span>
+              <kbd class="hotkey-badge-inline">SPACE</kbd>
+            </button>
+          </div>
+
+          <!-- PERFORMER INTERFACE -->
+          <div class="battle-action-panel performer-panel" id="performerPanel">
+            <div class="prompt-card">
+              <div class="prompt-header">
+                <span class="badge ai-prompt-badge" id="promptTypeBadge">⚡ AI CRINGE CHALLENGE</span>
+                <span class="badge custom-prompt-badge hidden" id="customPromptBadge">⭐ MY PROMPT</span>
+                <button class="btn-xs btn-shuffle" id="btnShufflePrompt" title="Shuffle prompt [S]">
+                  <i data-lucide="refresh-cw"></i> <span>SHUFFLE</span> <kbd class="btn-kbd-mini">S</kbd>
+                </button>
+              </div>
+              <p class="prompt-text" id="aiPromptText">"Attempt to pitch an invisible bucket of air to your opponent using an ultra-dramatic French accent."</p>
+            </div>
+
+            <div class="performer-tools-row">
+              <button class="btn-tool" id="btnSoundAirhorn" title="Airhorn [1]"><span class="tool-name">🔊 AIRHORN</span> <kbd class="btn-kbd-mini">1</kbd></button>
+              <button class="btn-tool" id="btnSoundHonk" title="Honk [2]"><span class="tool-name">🤡 HONK</span> <kbd class="btn-kbd-mini">2</kbd></button>
+              <button class="btn-tool" id="btnSoundBoing" title="Boing [3]"><span class="tool-name">🤪 BOING</span> <kbd class="btn-kbd-mini">3</kbd></button>
+              <button class="btn-tool" id="btnSoundEvil" title="Evil Laugh [4]"><span class="tool-name">😈 EVIL</span> <kbd class="btn-kbd-mini">4</kbd></button>
+            </div>
+          </div>
+
+          <!-- DEFENDER INTERFACE -->
+          <div class="battle-action-panel defender-panel hidden" id="defenderPanel">
+            <div class="defender-warning-box">
+              <span class="def-warning-icon">⚠️</span>
+              <span>SURVIVE 10 SECONDS WITHOUT SMILING OR LAUGHING!</span>
+            </div>
+
+            <button class="btn-i-laughed" id="btnILaughed" title="Tap or press [SPACE] if you laughed">
+              <div class="btn-laughed-content">
+                <span class="laughed-emoji">💀</span>
+                <span class="laughed-main-text">I LAUGHED 💀</span>
+                <span class="laughed-subtext">TAP OR PRESS <kbd class="hotkey-badge-inline">SPACE</kbd> IF YOU BROKE</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 4. RESULTS VIEW ==================== -->
+      <section class="view-screen" id="view-results">
+        <div class="results-container">
+          <div class="result-banner" id="resultBanner">
+            <div class="result-icon" id="resultIcon">💀</div>
+            <h2 class="result-title" id="resultTitle">CRINGE SUCCESSFUL</h2>
+            <p class="result-tagline" id="resultTagline">"YOU BROKE THEM 💀"</p>
+          </div>
+
+          <div class="rewards-card">
+            <h3 class="rewards-card-title">BATTLE REWARDS</h3>
+            <div class="rewards-grid">
+              <div class="reward-box">
+                <span class="rw-icon">⚡</span>
+                <span class="rw-val" id="rwXpVal">+150 XP</span>
+                <span class="rw-label">PERFORMANCE</span>
+              </div>
+              <div class="reward-box">
+                <span class="rw-icon">🪙</span>
+                <span class="rw-val" id="rwCoinsVal">+50 COINS</span>
+                <span class="rw-label">VICTORY BONUS</span>
+              </div>
+              <div class="reward-box">
+                <span class="rw-icon">🔥</span>
+                <span class="rw-val" id="rwStreakVal">+1 STREAK</span>
+                <span class="rw-label">WINNING SPARK</span>
+              </div>
+            </div>
+
+            <div class="rank-progression-wrap">
+              <div class="rank-prog-header">
+                <span class="rank-title-sm" id="resRankName">Diamond II</span>
+                <span class="rank-xp-text" id="resRankXp">3,570 / 5,000 XP</span>
+              </div>
+              <div class="rank-bar-track">
+                <div class="rank-bar-fill" id="resRankFill" style="width: 71%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="recap-box">
+            <div class="recap-row">
+              <span>Game Mode:</span>
+              <strong id="recapMode">Don't Laugh (60s)</strong>
+            </div>
+            <div class="recap-row">
+              <span>Time Elapsed:</span>
+              <strong id="recapTime">00:43</strong>
+            </div>
+            <div class="recap-row">
+              <span>Peak Cringe Gauge:</span>
+              <strong class="highlight-cringe" id="recapPeak">CRITICAL (88%)</strong>
+            </div>
+          </div>
+
+          <div class="results-actions">
+            <button class="btn-primary btn-rematch" id="btnRematch">
+              <i data-lucide="rotate-ccw"></i> <span>REMATCH</span> <kbd class="hotkey-badge-inline">SPACE / R</kbd>
+            </button>
+            <button class="btn-secondary btn-home-return" id="btnReturnHome">
+              <i data-lucide="home"></i> <span>MAIN HOME</span> <kbd class="hotkey-badge-inline">ESC</kbd>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 5. LEADERBOARD VIEW ==================== -->
+      <section class="view-screen" id="view-leaderboard">
+        <div class="leaderboard-container">
+          <div class="view-header">
+            <h2>CRINGE <span class="glow-text">LEADERBOARD</span></h2>
+            <p class="view-subtitle">Top global poker faces & cringe performers</p>
+          </div>
+
+          <div class="tab-pills">
+            <button class="tab-pill active" id="lbTabGlobal">GLOBAL TOP</button>
+            <button class="tab-pill" id="lbTabStreak">WIN STREAKS</button>
+            <button class="tab-pill" id="lbTabWeekly">WEEKLY</button>
+          </div>
+
+          <div class="leaderboard-list" id="leaderboardList">
+            <!-- Items injected by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 6. MODES VIEW ==================== -->
+      <section class="view-screen" id="view-modes">
+        <div class="modes-container">
+          <div class="view-header">
+            <h2>GAME <span class="glow-text">MODES</span></h2>
+            <p class="view-subtitle">Extensible Cringe Meter arena collection</p>
+          </div>
+
+          <div class="modes-list" id="modesList">
+            <div class="mode-card mode-active" data-mode="dont_laugh">
+              <div class="mode-card-header">
+                <span class="mode-icon">🤡 vs 😐</span>
+                <span class="badge active-badge">PLAYABLE NOW</span>
+              </div>
+              <div class="mode-card-body">
+                <h3>Don't Laugh</h3>
+                <p>One Performer delivers AI cringe. One Defender holds a poker face for 10s. Make them break or survive!</p>
+              </div>
+              <div class="mode-card-footer">
+                <span class="mode-meta"><i data-lucide="clock"></i> 10 Seconds</span>
+                <span class="mode-meta"><i data-lucide="users"></i> 1v1 Live</span>
+              </div>
+            </div>
+
+            <div class="mode-card mode-active" data-mode="coop_duo">
+              <div class="mode-card-header">
+                <span class="mode-icon">🤡🤡 vs 😐</span>
+                <span class="badge feature-badge">CO-OP DUO PLAYABLE</span>
+              </div>
+              <div class="mode-card-body">
+                <h3>Co-Op Duo Tag Team</h3>
+                <p>Team up with a friend! Combine your cringe prompts and perform as dual performers to break defenders!</p>
+              </div>
+              <div class="mode-card-footer">
+                <span class="mode-meta"><i data-lucide="clock"></i> 15 Seconds</span>
+                <span class="mode-meta"><i data-lucide="users"></i> 2v1 / 2v2 Co-Op</span>
+              </div>
+            </div>
+
+            <div class="mode-card" data-mode="staring">
+              <div class="mode-card-header">
+                <span class="mode-icon">👁️ vs 👁️</span>
+                <span class="badge feature-badge">DEMO MODE</span>
+              </div>
+              <div class="mode-card-body">
+                <h3>Staring Contest</h3>
+                <p>No blinking! First player to blink or look away loses. Automatic face mesh camera detection.</p>
+              </div>
+              <div class="mode-card-footer">
+                <span class="mode-meta"><i data-lucide="clock"></i> Endurance</span>
+                <span class="mode-meta"><i data-lucide="eye"></i> Blink Sensor</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 7. PROFILE VIEW ==================== -->
+      <section class="view-screen" id="view-profile">
+        <div class="profile-container">
+          <div class="profile-header-card">
+            <div class="profile-avatar-box">
+              <span class="profile-avatar-large" id="profileLargeAvatar">🤡</span>
+              <button class="btn-avatar-edit" id="btnEditAvatar"><i data-lucide="edit-2"></i></button>
+            </div>
+            <div class="profile-name-row">
+              <h2 class="profile-name" id="profileName">HyperCringe_99</h2>
+              <span class="vip-crown-badge hidden" id="profileVipCrown" title="CRINGE VIP Member">👑</span>
+            </div>
+            <span class="badge rank-badge" id="profileRankBadge">🏆 Diamond II (3,420 XP)</span>
+
+            <!-- VIP PROFILE BANNER (Only visible for active VIP) -->
+            <div class="vip-profile-banner hidden" id="profileVipBanner">
+              <div class="vip-banner-content">
+                <div class="vip-banner-left">
+                  <span class="vip-crown-icon">👑</span>
+                  <div class="vip-banner-text">
+                    <span class="vip-banner-title">CRINGE VIP MEMBER</span>
+                    <span class="vip-banner-subtitle">2× Coins Active • Full Studio Access</span>
+                  </div>
+                </div>
+                <span class="badge vip-status-badge">VIP ACTIVE</span>
+              </div>
+            </div>
+
+            <div class="profile-title-tag">
+              <span>TITLE: </span>
+              <strong id="profileTitleTag">"ABSOLUTELY SHAMELESS"</strong>
+            </div>
+          </div>
+
+          <!-- ACCOUNT SIGN IN / GUEST STATUS CARD -->
+          <div class="account-card" id="profileAccountCard">
+            <div class="account-card-info">
+              <span class="account-status-label" id="accountStatusText">GUEST USER</span>
+              <h4 id="accountEmailText">Not Signed In</h4>
+            </div>
+            <button class="btn-sm btn-ghost" id="btnOpenAuthModal"><i data-lucide="user-check"></i> <span id="btnAuthText">SIGN IN</span></button>
+          </div>
+
+          <div class="profile-stats-grid">
+            <div class="pstat-item">
+              <span class="pstat-num" id="pstatMatches">142</span>
+              <span class="pstat-lbl">TOTAL BATTLES</span>
+            </div>
+            <div class="pstat-item">
+              <span class="pstat-num" id="pstatWinRate">68.5%</span>
+              <span class="pstat-lbl">WIN RATE</span>
+            </div>
+            <div class="pstat-item">
+              <span class="pstat-num" id="pstatBestStreak">12</span>
+              <span class="pstat-lbl">BEST STREAK</span>
+            </div>
+            <div class="pstat-item">
+              <span class="pstat-num" id="pstatBreaks">89</span>
+              <span class="pstat-lbl">PEOPLE BROKEN 💀</span>
+            </div>
+          </div>
+
+          <div class="studio-banner-card" id="profileStudioCard">
+            <div class="studio-banner-content">
+              <span class="studio-badge">🎨 PERSONALIZATION HUB</span>
+              <h3>CRINGE STUDIO</h3>
+              <p>Customize your identity, theme colors, custom cringe prompts, and soundboard!</p>
+              <button class="btn-primary btn-open-studio" id="btnProfileOpenStudio">
+                🎨 MAKE IT MINE
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3>UNLOCKED BADGES & TITLES</h3>
+            <div class="badges-row">
+              <span class="unlocked-badge" title="Survived 10 Critical Battles">🛡️ Unbreakable</span>
+              <span class="unlocked-badge" title="Made 50 Defenders Laugh">💀 Poker Destroyer</span>
+              <span class="unlocked-badge" title="7 Win Streak">🔥 On Fire</span>
+              <span class="unlocked-badge" title="Season 1 Pioneer">⚡ Season 1 OG</span>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3 data-i18n="settings_title">SETTINGS & CONTROLS</h3>
+            <div class="settings-list">
+              <div class="setting-row">
+                <span data-i18n="lang_setting">App Language (ภาษา)</span>
+                <select id="selectLanguage" class="select-lang-input">
+                  <option value="en">🇺🇸 English</option>
+                  <option value="th">🇹🇭 ภาษาไทย (Thai)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <span data-i18n="sound_setting">Sound Effects & Audio Synth</span>
+                <input type="checkbox" id="toggleSound" checked />
+              </div>
+              <div class="setting-row">
+                <span data-i18n="sensor_setting">Webcam Smile Sensor</span>
+                <input type="checkbox" id="toggleSmileSensor" checked />
+              </div>
+              <div class="setting-row">
+                <span data-i18n="shell_setting">Desktop Mobile Frame Shell</span>
+                <input type="checkbox" id="toggleFrameShell" checked />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR (Mobile / Compact) -->
+    <nav class="bottom-nav" id="bottomNav">
+      <button class="nav-btn active" data-view="view-landing">
+        <i data-lucide="sparkles"></i>
+        <span>HOME</span>
+      </button>
+      <button class="nav-btn" data-view="view-home">
+        <i data-lucide="swords"></i>
+        <span>BATTLES</span>
+      </button>
+      <button class="nav-btn" data-view="view-leaderboard">
+        <i data-lucide="trophy"></i>
+        <span data-i18n="nav_leaderboard">RANKS</span>
+      </button>
+      <button class="nav-btn" data-view="view-modes">
+        <i data-lucide="gamepad-2"></i>
+        <span data-i18n="nav_modes">MODES</span>
+      </button>
+      <button class="nav-btn" data-view="view-profile">
+        <i data-lucide="user"></i>
+        <span data-i18n="nav_profile">PROFILE</span>
+      </button>
+    </nav>
+
+    <div class="home-indicator"></div>
+  </div>
+
+  <!-- QUICK SETUP & SAFETY RULES MODAL (191258.png) -->
+  <div class="modal-overlay hidden" id="quickSetupRulesModal">
+    <div class="rules-modal-card">
+      <div class="rules-header">
+        <span class="rules-tag">QUICK SETUP</span>
+        <h2>Get ready to cringe</h2>
+        <p class="rules-subtext">Pick a name your opponent will see, then read & accept the rules. You can play as a guest, but <a href="#" id="linkRulesSignIn">sign in</a> to save your score to the leaderboard.</p>
+      </div>
+
+      <div class="rules-form-group">
+        <label class="rules-label">DISPLAY NAME</label>
+        <input type="text" id="quickSetupDisplayName" class="rules-input" placeholder="Enter a name" value="Anonymous" maxlength="20" />
+      </div>
+
+      <div class="rules-list">
+        <span class="rules-heading-small">RULES</span>
+        <label class="rule-checkbox-item">
+          <input type="checkbox" class="rule-chk" id="chkRule1" checked />
+          <span class="rule-text">I am at least <strong>18 years old</strong>.</span>
+        </label>
+        <label class="rule-checkbox-item">
+          <input type="checkbox" class="rule-chk" id="chkRule2" checked />
+          <span class="rule-text">I will not show nudity, sexual content, minors, weapons, violence, or any illegal content on camera. I will not harass, threaten, or dox my opponent.</span>
+        </label>
+        <label class="rule-checkbox-item">
+          <input type="checkbox" class="rule-chk" id="chkRule3" checked />
+          <span class="rule-text">I understand that still frames from my camera will be analyzed by automated and human moderation systems, and may be retained for up to 30 days.</span>
+        </label>
+        <label class="rule-checkbox-item">
+          <input type="checkbox" class="rule-chk" id="chkRule4" checked />
+          <span class="rule-text">I will not record, screenshot, or rebroadcast my opponent's video or audio without their consent.</span>
+        </label>
+        <label class="rule-checkbox-item">
+          <input type="checkbox" class="rule-chk" id="chkRule5" checked />
+          <span class="rule-text">I understand I am voluntarily showing my camera and microphone to a stranger, and Cringe Meter does not pre-screen opponents.</span>
+        </label>
+      </div>
+
+      <p class="rules-footer-terms">Full terms at <a href="#" target="_blank">cringemeter.com/terms</a> (section 6). Violations result in immediate and permanent ban.</p>
+
+      <div class="rules-actions-row">
+        <button class="btn-rules-cancel" id="btnCancelRules">Cancel</button>
+        <button class="btn-rules-agree" id="btnAgreeStartRules">I agree — start</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOM CODE MODAL -->
+  <div class="modal-overlay hidden" id="roomModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="roomModalTitle">MULTIPLAYER ROOM</h3>
+        <button class="btn-close-modal" id="btnCloseRoomModal"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="room-modal-body" id="createRoomBody">
+        <p class="modal-desc">Share this Room Code with your friend to play live 1v1 Don't Laugh!</p>
+        <div class="code-box">
+          <span class="room-code-display" id="roomCodeDisplay">CRINGE-8891</span>
+          <button class="btn-xs btn-copy-code" id="btnCopyCode"><i data-lucide="copy"></i> COPY</button>
+        </div>
+        <div class="waiting-pulse-box">
+          <div class="radar-center-sm">🤡</div>
+          <span>Waiting for friend to connect...</span>
+        </div>
+      </div>
+
+      <div class="room-modal-body hidden" id="joinRoomBody">
+        <p class="modal-desc">Enter your friend's 6-character Room Code:</p>
+        <input type="text" class="room-code-input" id="roomCodeInput" placeholder="e.g. CRINGE-8891" maxlength="12" />
+        <button class="btn-primary btn-connect-room" id="btnConnectRoom">CONNECT TO ROOM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVATAR SELECTOR MODAL -->
+  <div class="modal-overlay hidden" id="avatarModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>CHOOSE YOUR AVATAR</h3>
+        <button class="btn-close-modal" id="btnCloseAvatarModal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="avatar-grid" id="avatarGrid">
+        <span class="avatar-option">🤡</span>
+        <span class="avatar-option">😐</span>
+        <span class="avatar-option">💀</span>
+        <span class="avatar-option">🤖</span>
+        <span class="avatar-option">👹</span>
+        <span class="avatar-option">👽</span>
+        <span class="avatar-option">😎</span>
+        <span class="avatar-option">🔥</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAFETY REPORT MODAL -->
+  <div class="modal-overlay hidden" id="reportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🚩 REPORT STRANGER</h3>
+        <button class="btn-close-modal" id="btnCloseReportModal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="report-modal-body">
+        <p class="modal-desc">Please select a reason for reporting this user:</p>
+        <select id="reportReasonSelect" class="studio-input" style="width:100%;margin:12px 0;">
+          <option value="Nudity / Sexual Content">Nudity / Sexual Content</option>
+          <option value="Harassment / Bullying">Harassment / Bullying</option>
+          <option value="Hate Speech / Abusive Behavior">Hate Speech / Abusive Behavior</option>
+          <option value="Underage Safety Concern">Underage Safety Concern</option>
+          <option value="Spam / Bot">Spam / Bot</option>
+          <option value="Other">Other</option>
+        </select>
+        <button class="btn-primary" id="btnSubmitReport" style="width:100%;">SUBMIT REPORT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT SIGN IN / REGISTER MODAL -->
+  <div class="modal-overlay hidden" id="authModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="studio-badge-sm">🔐 USER ACCOUNT</span>
+          <h3 id="authModalTitle">SIGN IN TO CRINGE METER</h3>
+        </div>
+        <button class="btn-close-modal" id="btnCloseAuthModal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="auth-modal-body">
+        <div class="form-group">
+          <label>Username / Display Name</label>
+          <input type="text" id="authUsernameInput" class="studio-input" placeholder="e.g. HyperCringe_99" maxlength="20" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="authEmailInput" class="studio-input" placeholder="user@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="authPasswordInput" class="studio-input" placeholder="••••••••" />
+        </div>
+        <button class="btn-primary" id="btnSubmitAuth" style="width:100%;margin-top:10px;">SIGN IN / CREATE ACCOUNT</button>
+        <button class="btn-secondary" id="btnAuthGuest" style="width:100%;margin-top:8px;">CONTINUE AS GUEST</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANDATORY CAMERA & MICROPHONE PERMISSION MODAL -->
+  <div class="modal-overlay hidden" id="permissionsModal">
+    <div class="modal-card" style="text-align:center;">
+      <div class="modal-header" style="justify-content:center;">
+        <span class="studio-badge-sm" style="background:var(--accent-magenta);color:#FFF;">⚠️ PERMISSION REQUIRED</span>
+      </div>
+      <div class="perm-modal-body" style="padding:15px 0;">
+        <div style="font-size:3.5rem;margin-bottom:12px;">📹 🎤</div>
+        <h3 style="font-family:var(--font-heading);font-weight:900;color:#FFF;margin-bottom:8px;">CAMERA & VOICE REQUIRED</h3>
+        <p class="modal-desc" style="font-size:0.85rem;line-height:1.4;margin-bottom:20px;">
+          CRINGE METER is a live video social game. You <strong>MUST</strong> enable your camera and microphone to match with strangers.
+        </p>
+        <button class="btn-primary" id="btnGrantPermissions" style="width:100%;padding:14px;font-size:1rem;">ALLOW CAMERA & MICROPHONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIP UPGRADE MODAL -->
+  <div class="modal-overlay hidden" id="vipUpgradeModal">
+    <div class="modal-card vip-modal-card">
+      <div class="vip-modal-header">
+        <div class="vip-crown-glow">👑</div>
+        <span class="badge vip-exclusive-badge">CRINGE VIP</span>
+        <h2 class="vip-modal-title">UNLOCK CRINGE STUDIO</h2>
+        <p class="vip-modal-desc">Unlock premium customization and upgrade your CRINGE METER experience.</p>
+      </div>
+
+      <div class="vip-perks-list">
+        <div class="vip-perk-item">
+          <div class="perk-check">✓</div>
+          <div class="perk-text">
+            <strong>Full Cringe Studio Access</strong>
+            <span>Customize photos, themes, victory taunts & custom prompts</span>
+          </div>
+        </div>
+        <div class="vip-perk-item">
+          <div class="perk-check">✓</div>
+          <div class="perk-text">
+            <strong>2× Coins on All Battles</strong>
+            <span>Double currency rewards on every Don't Laugh victory</span>
+          </div>
+        </div>
+        <div class="vip-perk-item">
+          <div class="perk-check">✓</div>
+          <div class="perk-text">
+            <strong>Exclusive VIP Profile Banner</strong>
+            <span>Golden glowing prestige status banner on your profile</span>
+          </div>
+        </div>
+        <div class="vip-perk-item">
+          <div class="perk-check">✓</div>
+          <div class="perk-text">
+            <strong>Exclusive VIP Title</strong>
+            <span>Equip the exclusive 👑 CRINGE VIP title in arena battles</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="vip-pricing-box">
+        <span class="vip-price-currency">$5.99</span>
+        <span class="vip-price-period">/ MONTH</span>
+      </div>
+
+      <div class="vip-modal-actions">
+        <button class="btn-vip-cta" id="btnGetCringeVip">
+          <span>👑 GET CRINGE VIP</span>
+        </button>
+        <button class="btn-vip-dismiss" id="btnDismissVipModal">Maybe later</button>
+        <span class="vip-cancel-note">Cancel anytime.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIP CHECKOUT PLACEHOLDER MODAL -->
+  <div class="modal-overlay hidden" id="vipCheckoutModal">
+    <div class="modal-card vip-checkout-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="studio-badge-sm" style="background:var(--accent-gold);color:#000;">👑 CHECKOUT PREPARATION</span>
+          <h3>CRINGE VIP SUBSCRIPTION</h3>
+        </div>
+        <button class="btn-close-modal" id="btnCloseVipCheckoutModal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="vip-checkout-body">
+        <p class="modal-desc" style="margin-bottom:14px;color:var(--text-main);">
+          <strong>Plan:</strong> CRINGE VIP ($5.99 USD / month)<br/>
+          <strong>Status:</strong> Ready for real payment provider webhook integration.
+        </p>
+        <div class="checkout-notice-box">
+          <p style="font-size:0.8rem;color:var(--text-dim);line-height:1.4;">
+            🔒 Production payment verification is architected at <code>/api/subscription/status</code>.<br/>
+            For development UI testing, use <code>window.devVipTestHelper</code> in the browser console.
+          </p>
+        </div>
+        <button class="btn-primary" id="btnConfirmVipCheckoutClose" style="width:100%;margin-top:16px;">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRINGE STUDIO PERSONALIZATION MODAL -->
+  <div class="modal-overlay hidden" id="cringeStudioModal">
+    <div class="modal-card studio-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="studio-badge-sm">🎨 CRINGE STUDIO</span>
+          <h3>MAKE IT YOURS</h3>
+        </div>
+        <button class="btn-close-modal" id="btnCloseStudioModal"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="studio-tabs">
+        <button class="studio-tab active" data-tab="tab-identity">👤 Identity</button>
+        <button class="studio-tab" data-tab="tab-theme">🎨 Theme</button>
+        <button class="studio-tab" data-tab="tab-prompts">💬 Prompts</button>
+        <button class="studio-tab" data-tab="tab-sound">🔊 Audio</button>
+        <button class="studio-tab" data-tab="tab-storage">⚙️ Config</button>
+      </div>
+
+      <div class="studio-tab-content">
+        <!-- 1. IDENTITY TAB -->
+        <div class="studio-panel active" id="tab-identity">
+          <div class="form-group">
+            <label>Player Name</label>
+            <input type="text" id="inputStudioName" class="studio-input" placeholder="Your Username" maxlength="20" />
+          </div>
+          <div class="form-group">
+            <label>Custom Title</label>
+            <input type="text" id="inputStudioTitle" class="studio-input" placeholder="e.g. ABSOLUTELY SHAMELESS" maxlength="30" />
+          </div>
+          <div class="form-group">
+            <label>Victory Taunt Message</label>
+            <input type="text" id="inputStudioTaunt" class="studio-input" placeholder="e.g. YOU BROKE THEM 💀" maxlength="40" />
+          </div>
+          <div class="form-group">
+            <label>Avatar Emoji</label>
+            <div class="studio-avatar-grid" id="studioAvatarGrid">
+              <span class="studio-avatar-opt">🤡</span>
+              <span class="studio-avatar-opt">😐</span>
+              <span class="studio-avatar-opt">💀</span>
+              <span class="studio-avatar-opt">🤖</span>
+              <span class="studio-avatar-opt">👹</span>
+              <span class="studio-avatar-opt">👽</span>
+              <span class="studio-avatar-opt">😎</span>
+              <span class="studio-avatar-opt">🔥</span>
+              <span class="studio-avatar-opt">👑</span>
+              <span class="studio-avatar-opt">👻</span>
+              <span class="studio-avatar-opt">🚀</span>
+              <span class="studio-avatar-opt">🗿</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Custom Avatar Photo Upload</label>
+            <div class="photo-upload-box">
+              <input type="file" id="studioPhotoInput" accept="image/*" class="photo-file-input" />
+              <div class="photo-upload-preview" id="studioPhotoPreviewWrap">
+                <span class="photo-preview-placeholder">Click to upload custom avatar photo</span>
+              </div>
+              <button class="btn-xs btn-ghost" id="btnClearPhoto">Remove Custom Photo</button>
+            </div>
+          </div>
+          <button class="btn-primary btn-save-studio" id="btnSaveIdentity">SAVE IDENTITY</button>
+        </div>
+
+        <!-- 2. THEME TAB -->
+        <div class="studio-panel hidden" id="tab-theme">
+          <p class="panel-desc">Pick your signature app theme accent color:</p>
+          <div class="theme-grid">
+            <div class="theme-card active" data-theme="magenta">
+              <div class="theme-preview magenta-preview"></div>
+              <span>Cyber Magenta</span>
+            </div>
+            <div class="theme-card" data-theme="cyan">
+              <div class="theme-preview cyan-preview"></div>
+              <span>Neon Cyan</span>
+            </div>
+            <div class="theme-card" data-theme="green">
+              <div class="theme-preview green-preview"></div>
+              <span>Acid Green</span>
+            </div>
+            <div class="theme-card" data-theme="purple">
+              <div class="theme-preview purple-preview"></div>
+              <span>Vaporwave Purple</span>
+            </div>
+            <div class="theme-card" data-theme="gold">
+              <div class="theme-preview gold-preview"></div>
+              <span>Solar Gold</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. MY PROMPTS TAB -->
+        <div class="studio-panel hidden" id="tab-prompts">
+          <p class="panel-desc">Create custom cringe prompts to perform in battle!</p>
+          <div class="add-prompt-box">
+            <input type="text" id="inputNewPrompt" class="studio-input" placeholder="e.g. Try to pitch an invisible spoon with a dramatic accent..." maxlength="140" />
+            <button class="btn-primary btn-add-prompt" id="btnAddPrompt">ADD PROMPT</button>
+          </div>
+          <div class="custom-prompts-list" id="customPromptsList">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- 4. SOUNDBOARD TAB -->
+        <div class="studio-panel hidden" id="tab-sound">
+          <p class="panel-desc">Test sound effects and tune master volume:</p>
+          <div class="sound-volume-wrap">
+            <label>Master Sound Volume</label>
+            <input type="range" id="inputSoundVolume" min="0" max="100" value="80" class="studio-slider" />
+          </div>
+          <div class="sound-test-grid">
+            <button class="btn-sound-test" data-sound="airhorn">🔊 Airhorn</button>
+            <button class="btn-sound-test" data-sound="honk">🤡 Honk</button>
+            <button class="btn-sound-test" data-sound="boing">🤪 Boing</button>
+            <button class="btn-sound-test" data-sound="evil">😈 Evil Laugh</button>
+            <button class="btn-sound-test" data-sound="buzzer">💀 Buzzer</button>
+            <button class="btn-sound-test" data-sound="victory">🏆 Victory</button>
+          </div>
+        </div>
+
+        <!-- 5. CONFIG TAB -->
+        <div class="studio-panel hidden" id="tab-storage">
+          <p class="panel-desc">Export or reset your Cringe Meter setup:</p>
+          <div class="config-actions-row">
+            <button class="btn-secondary" id="btnExportSetup"><i data-lucide="download"></i> Export Setup (JSON)</button>
+            <button class="btn-danger" id="btnResetData"><i data-lucide="trash-2"></i> Reset Profile to Default</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Script Modules -->
+  <script src="js/audio.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/cringePrompts.js"></script>
+  <script src="js/faceDetector.js"></script>
+  <script src="js/gameModes/baseMode.js"></script>
+  <script src="js/gameModes/dontLaugh.js"></script>
+  <script src="js/gameModes/staringContest.js"></script>
+  <script src="js/gameModes/coopDuo.js"></script>
+  <script src="js/subscriptionService.js"></script>
+  <script src="js/gameEngine.js"></script>
+  <script src="js/online/onlineState.js"></script>
+  <script src="js/online/matchmaking.js"></script>
+  <script src="js/online/livekitClient.js"></script>
+  <script src="js/online/reactionAnalyzer.js"></script>
+  <script src="js/online/onlineBattle.js"></script>
+  <script src="js/pcControls.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

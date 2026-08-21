@@ -1,0 +1,979 @@
+/**
+ * CRINGE METER — Main Application Controller
+ * Handles UI interactions, view switching, audio triggers, and DOM bindings.
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+
+  const engine = window.gameEngine;
+  const sound = window.soundEngine;
+  const faceSensor = window.faceDetectorService;
+  const promptService = window.cringePromptService;
+
+  // DOM Elements
+  const views = document.querySelectorAll('.view-screen');
+  const navBtns = document.querySelectorAll('.nav-btn');
+
+  // Header Elements
+  const userNameDisplay = document.getElementById('userNameDisplay');
+  const userCoinsDisplay = document.getElementById('userCoinsDisplay');
+  const userStreakDisplay = document.getElementById('userStreakDisplay');
+  const userAvatarEmoji = document.getElementById('userAvatarEmoji');
+
+  // Home Screen Elements
+  const btnFindBattle = document.getElementById('btnFindBattle');
+  const cardStreak = document.getElementById('cardStreak');
+  const cardRank = document.getElementById('cardRank');
+  const cardLevel = document.getElementById('cardLevel');
+
+  // Matchmaking Elements
+  const mmSearchingState = document.getElementById('mmSearchingState');
+  const mmMatchFoundState = document.getElementById('mmMatchFoundState');
+  const btnCancelMM = document.getElementById('btnCancelMM');
+  const mmNameP1 = document.getElementById('mmNameP1');
+  const mmAvatarP1 = document.getElementById('mmAvatarP1');
+  const mmNameP2 = document.getElementById('mmNameP2');
+  const mmAvatarP2 = document.getElementById('mmAvatarP2');
+  const mmLvlP2 = document.getElementById('mmLvlP2');
+  const roleTitle = document.getElementById('roleTitle');
+  const roleIcon = document.getElementById('roleIcon');
+  const roleDesc = document.getElementById('roleDesc');
+  const roleProgressFill = document.getElementById('roleProgressFill');
+
+  // Battle View Elements
+  const battleTimerDigits = document.getElementById('battleTimerDigits');
+  const cringeGaugeFill = document.getElementById('cringeGaugeFill');
+  const cringeGaugeNeedle = document.getElementById('cringeGaugeNeedle');
+  const gaugeStatusText = document.getElementById('gaugeStatusText');
+
+  const oppVideoName = document.getElementById('oppVideoName');
+  const oppRoleBadge = document.getElementById('oppRoleBadge');
+  const oppFaceEmoji = document.getElementById('oppFaceEmoji');
+  const oppReactionSub = document.getElementById('oppReactionSub');
+  const smileRiskFill = document.getElementById('smileRiskFill');
+  const smileRiskVal = document.getElementById('smileRiskVal');
+
+  const selfRoleBadge = document.getElementById('selfRoleBadge');
+  const selfCamEmoji = document.getElementById('selfCamEmoji');
+  const localVideoFeed = document.getElementById('localVideoFeed');
+  const btnToggleCam = document.getElementById('btnToggleCam');
+
+  const performerPanel = document.getElementById('performerPanel');
+  const defenderPanel = document.getElementById('defenderPanel');
+  const aiPromptText = document.getElementById('aiPromptText');
+  const btnShufflePrompt = document.getElementById('btnShufflePrompt');
+  const btnILaughed = document.getElementById('btnILaughed');
+
+  // Sound Buttons
+  const btnSoundAirhorn = document.getElementById('btnSoundAirhorn');
+  const btnSoundHonk = document.getElementById('btnSoundHonk');
+  const btnSoundBoing = document.getElementById('btnSoundBoing');
+  const btnSoundEvil = document.getElementById('btnSoundEvil');
+
+  // Results View Elements
+  const resultBanner = document.getElementById('resultBanner');
+  const resultIcon = document.getElementById('resultIcon');
+  const resultTitle = document.getElementById('resultTitle');
+  const resultTagline = document.getElementById('resultTagline');
+  const rwXpVal = document.getElementById('rwXpVal');
+  const rwCoinsVal = document.getElementById('rwCoinsVal');
+  const rwStreakVal = document.getElementById('rwStreakVal');
+  const resRankName = document.getElementById('resRankName');
+  const resRankXp = document.getElementById('resRankXp');
+  const recapMode = document.getElementById('recapMode');
+  const recapTime = document.getElementById('recapTime');
+  const recapPeak = document.getElementById('recapPeak');
+  const btnRematch = document.getElementById('btnRematch');
+  const btnReturnHome = document.getElementById('btnReturnHome');
+
+  // Leaderboard & Settings Elements
+  const leaderboardList = document.getElementById('leaderboardList');
+  const toggleSound = document.getElementById('toggleSound');
+  const toggleFrameShell = document.getElementById('toggleFrameShell');
+  const mobileFrame = document.getElementById('mobileFrame');
+
+  // Modal Elements
+  const avatarModal = document.getElementById('avatarModal');
+  const btnEditAvatar = document.getElementById('btnEditAvatar');
+  const btnCloseAvatarModal = document.getElementById('btnCloseAvatarModal');
+  const avatarGrid = document.getElementById('avatarGrid');
+
+  // Helper Functions: View Navigation
+  function switchView(viewId) {
+    views.forEach(view => {
+      if (view.id === viewId) {
+        view.classList.add('active');
+      } else {
+        view.classList.remove('active');
+      }
+    });
+
+    const viewsContainer = document.getElementById('viewsContainer');
+    if (viewsContainer) {
+      viewsContainer.scrollTop = 0;
+    }
+
+    navBtns.forEach(btn => {
+      if (btn.dataset.view === viewId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    document.querySelectorAll('.desktop-nav-btn').forEach(btn => {
+      if (btn.dataset.view === viewId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    sound.playClick();
+  }
+
+  window.appSwitchView = switchView;
+
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetView = btn.dataset.view;
+      switchView(targetView);
+      if (targetView === 'view-leaderboard') {
+        renderLeaderboard();
+      }
+    });
+  });
+
+  function applyTheme(themeName) {
+    document.body.classList.remove('theme-magenta', 'theme-cyan', 'theme-green', 'theme-purple', 'theme-gold');
+    if (themeName && themeName !== 'magenta') {
+      document.body.classList.add(`theme-${themeName}`);
+    }
+  }
+
+  function updatePlayerHUD(stats) {
+    userNameDisplay.textContent = stats.name;
+    userCoinsDisplay.textContent = stats.coins.toLocaleString();
+    userStreakDisplay.textContent = stats.streak;
+
+    if (stats.avatarPhoto) {
+      userAvatarEmoji.innerHTML = `<img src="${stats.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+      userAvatarEmoji.textContent = stats.avatar;
+    }
+
+    cardStreak.textContent = `${stats.streak} Games`;
+    cardRank.textContent = stats.rank;
+    cardLevel.textContent = `LVL ${stats.level}`;
+
+    document.getElementById('profileName').textContent = stats.name;
+
+    if (stats.avatarPhoto) {
+      document.getElementById('profileLargeAvatar').innerHTML = `<img src="${stats.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+      document.getElementById('profileLargeAvatar').textContent = stats.avatar;
+    }
+
+    document.getElementById('profileRankBadge').textContent = `🏆 ${stats.rank} (${stats.xp.toLocaleString()} XP)`;
+    if (document.getElementById('profileTitleTag')) {
+      document.getElementById('profileTitleTag').textContent = `"${stats.title || 'ABSOLUTELY SHAMELESS'}"`;
+    }
+
+    document.getElementById('pstatMatches').textContent = stats.totalMatches;
+    if (document.getElementById('pstatStreak')) document.getElementById('pstatStreak').textContent = stats.streak;
+    document.getElementById('pstatBreaks').textContent = stats.peopleBroken;
+
+    // VIP Indicators & Status Banner
+    const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
+    const headerCrown = document.getElementById('headerVipCrown');
+    if (headerCrown) {
+      if (isVip) headerCrown.classList.remove('hidden');
+      else headerCrown.classList.add('hidden');
+    }
+
+    const profileCrown = document.getElementById('profileVipCrown');
+    if (profileCrown) {
+      if (isVip) profileCrown.classList.remove('hidden');
+      else profileCrown.classList.add('hidden');
+    }
+
+    const profileVipBanner = document.getElementById('profileVipBanner');
+    if (profileVipBanner) {
+      if (isVip) profileVipBanner.classList.remove('hidden');
+      else profileVipBanner.classList.add('hidden');
+    }
+
+    if (stats.theme) {
+      applyTheme(stats.theme);
+    }
+  }
+
+  engine.registerCallbacks({
+    onPlayerUpdated: (stats) => updatePlayerHUD(stats),
+    onBattleTick: (timeLeft, cringeLevel) => {
+      const secs = timeLeft < 10 ? `0${timeLeft}` : `${timeLeft}`;
+      battleTimerDigits.textContent = `00:${secs}`;
+      cringeGaugeFill.style.width = `${cringeLevel}%`;
+
+      if (cringeLevel > 75) {
+        gaugeStatusText.textContent = "CRINGE LEVEL: CRITICAL 💀";
+        gaugeStatusText.style.color = "var(--accent-magenta)";
+        oppFaceEmoji.textContent = "😬";
+        oppReactionSub.textContent = "Sweating & Holding Back...";
+      } else if (cringeLevel > 45) {
+        gaugeStatusText.textContent = "CRINGE DETECTED";
+        gaugeStatusText.style.color = "var(--accent-gold)";
+        oppFaceEmoji.textContent = "😏";
+        oppReactionSub.textContent = "Smirking Detected!";
+      } else {
+        gaugeStatusText.textContent = "CRINGE DETECTED";
+        gaugeStatusText.style.color = "var(--accent-cyan)";
+        oppFaceEmoji.textContent = "😐";
+        oppReactionSub.textContent = "Poker Face Active...";
+      }
+    },
+    onMatchEnd: (results, updatedPlayer) => {
+      updatePlayerHUD(updatedPlayer);
+      faceSensor.stopCamera();
+
+      resultTitle.textContent = results.title;
+      resultTagline.textContent = `"${results.subtitle}"`;
+      rwXpVal.textContent = results.isWinner ? "+150 XP" : "+40 XP";
+      
+      const isVipWinner = results.isWinner && (results.isVip || (window.subscriptionService && window.subscriptionService.hasVipAccess(updatedPlayer)));
+      rwCoinsVal.textContent = results.isWinner ? (isVipWinner ? `+${results.earnedCoins || 100} COINS (2× VIP)` : `+${results.earnedCoins || 50} COINS`) : "+0 COINS";
+      rwStreakVal.textContent = results.isWinner ? "+1 STREAK" : "STREAK RESET";
+
+      resRankName.textContent = updatedPlayer.rank;
+      resRankXp.textContent = `${updatedPlayer.xp.toLocaleString()} / 5,000 XP`;
+      recapMode.textContent = `${results.mode} (60s)`;
+      recapTime.textContent = results.timeElapsed;
+      recapPeak.textContent = results.peakCringe;
+
+      if (results.isWinner) {
+        resultIcon.textContent = "🏆";
+        resultBanner.style.color = "var(--accent-gold)";
+      } else {
+        resultIcon.textContent = "💀";
+        resultBanner.style.color = "var(--accent-magenta)";
+      }
+
+      switchView('view-results');
+    }
+  });
+
+  updatePlayerHUD(engine.getPlayerStats());
+
+  // ==========================================
+  // LANDING SHOWCASE & QUICK SETUP RULES MODAL (191248.png & 191258.png)
+  // ==========================================
+  const btnLandingBattles = document.getElementById('btnLandingBattles');
+  const cardLandingBattles = document.getElementById('cardLandingBattles');
+  const cardLandingStudio = document.getElementById('cardLandingStudio');
+  const quickSetupRulesModal = document.getElementById('quickSetupRulesModal');
+  const quickSetupDisplayName = document.getElementById('quickSetupDisplayName');
+  const btnCancelRules = document.getElementById('btnCancelRules');
+  const btnAgreeStartRules = document.getElementById('btnAgreeStartRules');
+  const linkRulesSignIn = document.getElementById('linkRulesSignIn');
+
+  function goToBattlesHome() {
+    sound.playClick();
+    switchView('view-home');
+  }
+
+  if (btnLandingBattles) {
+    btnLandingBattles.addEventListener('click', goToBattlesHome);
+  }
+  if (cardLandingBattles) {
+    cardLandingBattles.addEventListener('click', goToBattlesHome);
+  }
+  if (cardLandingStudio) {
+    cardLandingStudio.addEventListener('click', () => {
+      requestOpenCringeStudio('tab-identity');
+    });
+  }
+
+  function openQuickSetupRulesModal() {
+    if (quickSetupDisplayName) {
+      quickSetupDisplayName.value = engine.getPlayerStats().name || 'Anonymous';
+    }
+    if (quickSetupRulesModal) {
+      quickSetupRulesModal.classList.remove('hidden');
+    }
+  }
+
+  if (btnCancelRules) {
+    btnCancelRules.addEventListener('click', () => {
+      if (quickSetupRulesModal) quickSetupRulesModal.classList.add('hidden');
+    });
+  }
+
+  if (linkRulesSignIn) {
+    linkRulesSignIn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (quickSetupRulesModal) quickSetupRulesModal.classList.add('hidden');
+      const authModal = document.getElementById('authModal');
+      if (authModal) authModal.classList.remove('hidden');
+    });
+  }
+
+  function startMatchmakingFlow() {
+    switchView('view-matchmaking');
+    if (window.onlineBattleController) {
+      window.onlineBattleController.startOnlineMatchmaking();
+    } else {
+      // Local fallback
+      mmSearchingState.classList.remove('hidden');
+      mmMatchFoundState.classList.add('hidden');
+      const matchData = engine.startMatchmaking();
+      setTimeout(() => {
+        sound.playMatchFound();
+        mmSearchingState.classList.add('hidden');
+        mmMatchFoundState.classList.remove('hidden');
+      }, 2200);
+    }
+  }
+
+  if (btnAgreeStartRules) {
+    btnAgreeStartRules.addEventListener('click', () => {
+      const enteredName = quickSetupDisplayName ? quickSetupDisplayName.value.trim() : '';
+      const finalName = enteredName || 'Anonymous';
+      engine.updateProfile({ name: finalName });
+      localStorage.setItem('cringe_rules_accepted', 'true');
+      if (quickSetupRulesModal) quickSetupRulesModal.classList.add('hidden');
+      sound.playClick();
+      startMatchmakingFlow();
+    });
+  }
+
+  btnFindBattle.addEventListener('click', () => {
+    const rulesAccepted = localStorage.getItem('cringe_rules_accepted');
+    if (rulesAccepted !== 'true') {
+      openQuickSetupRulesModal();
+      return;
+    }
+
+    startMatchmakingFlow();
+  });
+
+  btnCancelMM.addEventListener('click', () => {
+    if (window.onlineMatchmaker) {
+      window.onlineMatchmaker.cancelMatch();
+    }
+    switchView('view-home');
+  });
+
+  function updatePromptDisplay(promptObj) {
+    const text = typeof promptObj === 'string' ? promptObj : (promptObj ? promptObj.text : "");
+    const isCustom = typeof promptObj === 'object' && promptObj ? promptObj.isCustom : false;
+    aiPromptText.textContent = `"${text}"`;
+
+    const customBadge = document.getElementById('customPromptBadge');
+    if (customBadge) {
+      if (isCustom) {
+        customBadge.classList.remove('hidden');
+      } else {
+        customBadge.classList.add('hidden');
+      }
+    }
+  }
+
+  function launchBattleView(matchData) {
+    switchView('view-battle');
+
+    oppVideoName.textContent = matchData.opponent.name;
+    oppFaceEmoji.textContent = matchData.opponent.avatar;
+
+    if (matchData.role === 'PERFORMER') {
+      selfRoleBadge.textContent = "PERFORMER 🤡";
+      oppRoleBadge.textContent = "DEFENDER 😐";
+      performerPanel.classList.remove('hidden');
+      defenderPanel.classList.add('hidden');
+      updatePromptDisplay(matchData.cringePrompt);
+    } else {
+      selfRoleBadge.textContent = "DEFENDER 😐";
+      oppRoleBadge.textContent = "PERFORMER 🤡";
+      performerPanel.classList.add('hidden');
+      defenderPanel.classList.remove('hidden');
+    }
+
+    faceSensor.startCamera(localVideoFeed);
+
+    faceSensor.onSmileUpdate((riskPct) => {
+      smileRiskFill.style.width = `${riskPct}%`;
+      smileRiskVal.textContent = `${riskPct}%`;
+
+      if (riskPct > 60) {
+        smileRiskFill.style.backgroundColor = "var(--accent-magenta)";
+        smileRiskVal.style.color = "var(--accent-magenta)";
+      } else if (riskPct > 35) {
+        smileRiskFill.style.backgroundColor = "var(--accent-gold)";
+        smileRiskVal.style.color = "var(--accent-gold)";
+      } else {
+        smileRiskFill.style.backgroundColor = "var(--accent-green)";
+        smileRiskVal.style.color = "var(--accent-green)";
+      }
+
+      if (matchData.role === 'DEFENDER' && riskPct >= 90) {
+        engine.triggerMatchEnd('DEFENDER_LAUGHED');
+      }
+    });
+
+    engine.startBattle();
+  }
+
+  btnShufflePrompt.addEventListener('click', () => {
+    sound.playClick();
+    const newPrompt = promptService.getRandomPrompt();
+    updatePromptDisplay(newPrompt);
+    if (window.onlineMatchmaker && window.onlineMatchmaker.status === 'CONNECTED') {
+      const promptText = typeof newPrompt === 'string' ? newPrompt : newPrompt.text;
+      window.onlineMatchmaker.shufflePrompt(newPrompt.isCustom ? promptText : null);
+    }
+  });
+
+  btnSoundAirhorn.addEventListener('click', () => {
+    sound.playAirhorn();
+    faceSensor.triggerSpike(30);
+  });
+  btnSoundHonk.addEventListener('click', () => {
+    sound.playHonk();
+    faceSensor.triggerSpike(20);
+  });
+  btnSoundBoing.addEventListener('click', () => {
+    sound.playBoing();
+    faceSensor.triggerSpike(25);
+  });
+  btnSoundEvil.addEventListener('click', () => {
+    sound.playEvilLaugh();
+    faceSensor.triggerSpike(35);
+  });
+
+  btnILaughed.addEventListener('click', () => {
+    if (window.onlineMatchmaker && window.onlineMatchmaker.status === 'CONNECTED') {
+      window.onlineMatchmaker.triggerLaughed();
+    }
+    engine.triggerMatchEnd('DEFENDER_LAUGHED');
+  });
+
+  btnToggleCam.addEventListener('click', () => {
+    if (faceSensor.active) {
+      faceSensor.stopCamera();
+    } else {
+      faceSensor.startCamera(localVideoFeed);
+    }
+  });
+
+  btnRematch.addEventListener('click', () => {
+    btnFindBattle.click();
+  });
+  btnReturnHome.addEventListener('click', () => {
+    switchView('view-home');
+  });
+
+  function renderLeaderboard() {
+    const list = engine.getLeaderboard();
+    leaderboardList.innerHTML = "";
+
+    list.forEach(item => {
+      const row = document.createElement('div');
+      row.className = `lb-item top-${item.rank} ${item.isPlayer ? 'lb-is-player' : ''}`;
+      const avatarContent = item.isPlayer && engine.player.avatarPhoto ? 
+        `<img src="${engine.player.avatarPhoto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" />` : 
+        item.avatar;
+      row.innerHTML = `
+        <span class="lb-rank">#${item.rank}</span>
+        <span class="lb-avatar">${avatarContent}</span>
+        <div class="lb-user-info">
+          <span class="lb-name">${item.name} ${item.isPlayer ? '⭐ (YOU)' : ''}</span>
+          <span class="lb-sub">🔥 ${item.streak} Win Streak • ${item.title}</span>
+        </div>
+        <span class="lb-score">${item.score}</span>
+      `;
+      leaderboardList.appendChild(row);
+    });
+  }
+
+  const roomModal = document.getElementById('roomModal');
+  const btnCreateRoom = document.getElementById('btnCreateRoom');
+  const btnJoinRoom = document.getElementById('btnJoinRoom');
+  const btnCloseRoomModal = document.getElementById('btnCloseRoomModal');
+  const roomModalTitle = document.getElementById('roomModalTitle');
+  const createRoomBody = document.getElementById('createRoomBody');
+  const joinRoomBody = document.getElementById('joinRoomBody');
+  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+  const btnCopyCode = document.getElementById('btnCopyCode');
+  const roomCodeInput = document.getElementById('roomCodeInput');
+  const btnConnectRoom = document.getElementById('btnConnectRoom');
+
+  btnCreateRoom.addEventListener('click', () => {
+    roomModal.classList.remove('hidden');
+    roomModalTitle.textContent = "CREATE MULTIPLAYER ROOM";
+    createRoomBody.classList.remove('hidden');
+    joinRoomBody.classList.add('hidden');
+
+    const roomCode = engine.createRoom();
+    roomCodeDisplay.textContent = roomCode;
+    sound.playClick();
+  });
+
+  btnJoinRoom.addEventListener('click', () => {
+    roomModal.classList.remove('hidden');
+    roomModalTitle.textContent = "JOIN MULTIPLAYER ROOM";
+    createRoomBody.classList.add('hidden');
+    joinRoomBody.classList.remove('hidden');
+    sound.playClick();
+  });
+
+  btnCloseRoomModal.addEventListener('click', () => {
+    roomModal.classList.add('hidden');
+  });
+
+  btnCopyCode.addEventListener('click', () => {
+    navigator.clipboard.writeText(roomCodeDisplay.textContent);
+    btnCopyCode.textContent = "COPIED!";
+    setTimeout(() => { btnCopyCode.innerHTML = '<i data-lucide="copy"></i> COPY'; }, 2000);
+  });
+
+  btnConnectRoom.addEventListener('click', () => {
+    const code = roomCodeInput.value.trim();
+    if (code) {
+      engine.joinRoom(code);
+      roomModal.classList.add('hidden');
+      btnFindBattle.click();
+    }
+  });
+
+  if (btnEditAvatar) {
+    btnEditAvatar.addEventListener('click', () => {
+      avatarModal.classList.remove('hidden');
+    });
+  }
+
+  btnCloseAvatarModal.addEventListener('click', () => {
+    avatarModal.classList.add('hidden');
+  });
+
+  avatarGrid.querySelectorAll('.avatar-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      engine.setAvatar(opt.textContent);
+      avatarModal.classList.add('hidden');
+      sound.playClick();
+    });
+  });
+
+  const selectLanguage = document.getElementById('selectLanguage');
+  if (selectLanguage && window.i18nEngine) {
+    selectLanguage.value = window.i18nEngine.currentLang;
+    selectLanguage.addEventListener('change', (e) => {
+      window.i18nEngine.setLanguage(e.target.value);
+      sound.playClick();
+    });
+    window.i18nEngine.updateDOM();
+  }
+
+  toggleSound.addEventListener('change', (e) => {
+    sound.toggleSound(e.target.checked);
+  });
+  toggleFrameShell.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      mobileFrame.classList.remove('full-screen-mode');
+    } else {
+      mobileFrame.classList.add('full-screen-mode');
+    }
+  });
+
+  document.querySelectorAll('.mode-card[data-mode]').forEach(card => {
+    card.addEventListener('click', () => {
+      const modeKey = card.dataset.mode;
+      if (modeKey === 'dont_laugh') {
+        engine.activeMode = new window.DontLaughMode();
+      } else if (modeKey === 'coop_duo') {
+        engine.activeMode = new window.CoopDuoMode();
+      } else if (modeKey === 'staring') {
+        engine.activeMode = new window.StaringContestMode();
+      }
+      engine.activeMode.init(engine);
+
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('mode-active'));
+      card.classList.add('mode-active');
+      sound.playClick();
+      switchView('view-home');
+    });
+  });
+
+  // ==========================================
+  // CRINGE STUDIO PERSONALIZATION CONTROLLER
+  // ==========================================
+  const cringeStudioModal = document.getElementById('cringeStudioModal');
+  const btnHeaderMakeMine = document.getElementById('btnHeaderMakeMine');
+  const btnProfileOpenStudio = document.getElementById('btnProfileOpenStudio');
+  const btnCloseStudioModal = document.getElementById('btnCloseStudioModal');
+
+  function openStudioModal(initialTab = 'tab-identity') {
+    if (!cringeStudioModal) return;
+    cringeStudioModal.classList.remove('hidden');
+
+    const stats = engine.getPlayerStats();
+    if (document.getElementById('inputStudioName')) document.getElementById('inputStudioName').value = stats.name || '';
+    if (document.getElementById('inputStudioTitle')) document.getElementById('inputStudioTitle').value = stats.title || '';
+    if (document.getElementById('inputStudioTaunt')) document.getElementById('inputStudioTaunt').value = stats.taunt || 'YOU BROKE THEM 💀';
+
+    document.querySelectorAll('.studio-avatar-opt').forEach(opt => {
+      if (opt.textContent === stats.avatar) {
+        opt.classList.add('selected');
+      } else {
+        opt.classList.remove('selected');
+      }
+    });
+
+    const previewWrap = document.getElementById('studioPhotoPreviewWrap');
+    if (previewWrap) {
+      if (stats.avatarPhoto) {
+        previewWrap.innerHTML = `<img src="${stats.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;" />`;
+      } else {
+        previewWrap.innerHTML = `<span class="photo-preview-placeholder">Click to upload photo</span>`;
+      }
+    }
+
+    document.querySelectorAll('.theme-card').forEach(card => {
+      if (card.dataset.theme === (stats.theme || 'magenta')) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+
+    renderCustomPromptsList();
+    switchStudioTab(initialTab);
+    sound.playClick();
+  }
+
+  function switchStudioTab(tabId) {
+    document.querySelectorAll('.studio-tab').forEach(tab => {
+      if (tab.dataset.tab === tabId) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+    document.querySelectorAll('.studio-panel').forEach(panel => {
+      if (panel.id === tabId) {
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    });
+  }
+
+  const btnHomeOpenStudio = document.getElementById('btnHomeOpenStudio');
+  const btnHomeViewLeaderboard = document.getElementById('btnHomeViewLeaderboard');
+
+  function requestOpenCringeStudio(initialTab = 'tab-identity') {
+    const stats = engine.getPlayerStats();
+    const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
+    if (isVip) {
+      openStudioModal(initialTab);
+    } else {
+      sound.playClick();
+      const vipModal = document.getElementById('vipUpgradeModal');
+      if (vipModal) vipModal.classList.remove('hidden');
+    }
+  }
+
+  if (btnHeaderMakeMine) btnHeaderMakeMine.addEventListener('click', () => requestOpenCringeStudio('tab-identity'));
+  if (btnProfileOpenStudio) btnProfileOpenStudio.addEventListener('click', () => requestOpenCringeStudio('tab-identity'));
+  if (btnHomeOpenStudio) btnHomeOpenStudio.addEventListener('click', () => requestOpenCringeStudio('tab-identity'));
+  if (btnCloseStudioModal) btnCloseStudioModal.addEventListener('click', () => cringeStudioModal.classList.add('hidden'));
+
+  // ==========================================
+  // VIP UPGRADE & CHECKOUT MODAL HANDLERS
+  // ==========================================
+  const vipUpgradeModal = document.getElementById('vipUpgradeModal');
+  const btnGetCringeVip = document.getElementById('btnGetCringeVip');
+  const btnDismissVipModal = document.getElementById('btnDismissVipModal');
+  const vipCheckoutModal = document.getElementById('vipCheckoutModal');
+  const btnCloseVipCheckoutModal = document.getElementById('btnCloseVipCheckoutModal');
+  const btnConfirmVipCheckoutClose = document.getElementById('btnConfirmVipCheckoutClose');
+
+  if (btnDismissVipModal) {
+    btnDismissVipModal.addEventListener('click', () => {
+      if (vipUpgradeModal) vipUpgradeModal.classList.add('hidden');
+    });
+  }
+
+  if (btnGetCringeVip) {
+    btnGetCringeVip.addEventListener('click', () => {
+      sound.playClick();
+      if (vipUpgradeModal) vipUpgradeModal.classList.add('hidden');
+      if (vipCheckoutModal) vipCheckoutModal.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseVipCheckoutModal) {
+    btnCloseVipCheckoutModal.addEventListener('click', () => {
+      if (vipCheckoutModal) vipCheckoutModal.classList.add('hidden');
+    });
+  }
+  if (btnConfirmVipCheckoutClose) {
+    btnConfirmVipCheckoutClose.addEventListener('click', () => {
+      if (vipCheckoutModal) vipCheckoutModal.classList.add('hidden');
+    });
+  }
+
+  if (btnHomeViewLeaderboard) {
+    btnHomeViewLeaderboard.addEventListener('click', () => {
+      switchView('view-leaderboard');
+      renderLeaderboard();
+    });
+  }
+
+  // PC Home Soundboard Quick Buttons
+  document.querySelectorAll('.btn-tool-pc[data-sound]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const soundType = btn.dataset.sound;
+      if (soundType && sound) {
+        sound.playSound(soundType);
+        btn.classList.add('hotkey-active');
+        setTimeout(() => btn.classList.remove('hotkey-active'), 180);
+      }
+    });
+  });
+
+  document.querySelectorAll('.studio-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchStudioTab(tab.dataset.tab);
+      sound.playClick();
+    });
+  });
+
+  document.querySelectorAll('.studio-avatar-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.studio-avatar-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      engine.setAvatar(opt.textContent);
+      sound.playClick();
+    });
+  });
+
+  const studioPhotoInput = document.getElementById('studioPhotoInput');
+  const btnClearPhoto = document.getElementById('btnClearPhoto');
+  if (studioPhotoInput) {
+    studioPhotoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          engine.setAvatarPhoto(base64);
+          const previewWrap = document.getElementById('studioPhotoPreviewWrap');
+          if (previewWrap) previewWrap.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;" />`;
+          sound.playClick();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+  if (btnClearPhoto) {
+    btnClearPhoto.addEventListener('click', () => {
+      engine.setAvatarPhoto(null);
+      const previewWrap = document.getElementById('studioPhotoPreviewWrap');
+      if (previewWrap) previewWrap.innerHTML = `<span class="photo-preview-placeholder">Click to upload photo</span>`;
+      sound.playClick();
+    });
+  }
+
+  const btnSaveIdentity = document.getElementById('btnSaveIdentity');
+  if (btnSaveIdentity) {
+    btnSaveIdentity.addEventListener('click', () => {
+      const name = document.getElementById('inputStudioName').value.trim();
+      const title = document.getElementById('inputStudioTitle').value.trim();
+      const taunt = document.getElementById('inputStudioTaunt').value.trim();
+      engine.updateProfile({ name, title, taunt });
+      sound.playClick();
+      cringeStudioModal.classList.add('hidden');
+    });
+  }
+
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const theme = card.dataset.theme;
+      engine.updateProfile({ theme });
+      applyTheme(theme);
+      sound.playClick();
+    });
+  });
+
+  function renderCustomPromptsList() {
+    const listContainer = document.getElementById('customPromptsList');
+    if (!listContainer) return;
+    const customPrompts = promptService.getCustomPrompts();
+    listContainer.innerHTML = '';
+
+    if (customPrompts.length === 0) {
+      listContainer.innerHTML = `<p class="panel-desc" style="text-align:center;padding:12px;">No custom prompts created yet. Add your first prompt above!</p>`;
+      return;
+    }
+
+    customPrompts.forEach((p, idx) => {
+      const item = document.createElement('div');
+      item.className = 'custom-prompt-item';
+      item.innerHTML = `
+        <span>"${p.text}"</span>
+        <button class="btn-del-prompt" data-idx="${idx}" title="Delete Prompt"><i data-lucide="trash-2"></i></button>
+      `;
+      listContainer.appendChild(item);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+
+    listContainer.querySelectorAll('.btn-del-prompt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        promptService.removeCustomPrompt(idx);
+        renderCustomPromptsList();
+        sound.playClick();
+      });
+    });
+  }
+
+  const btnAddPrompt = document.getElementById('btnAddPrompt');
+  const inputNewPrompt = document.getElementById('inputNewPrompt');
+  if (btnAddPrompt && inputNewPrompt) {
+    btnAddPrompt.addEventListener('click', () => {
+      const val = inputNewPrompt.value.trim();
+      if (val) {
+        promptService.addCustomPrompt(val);
+        inputNewPrompt.value = '';
+        renderCustomPromptsList();
+        sound.playClick();
+      }
+    });
+  }
+
+  const inputSoundVolume = document.getElementById('inputSoundVolume');
+  if (inputSoundVolume) {
+    inputSoundVolume.addEventListener('input', (e) => {
+      sound.setVolume(parseInt(e.target.value, 10) / 100);
+    });
+  }
+
+  document.querySelectorAll('.btn-sound-test').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const snd = btn.dataset.sound;
+      if (snd === 'airhorn') sound.playAirhorn();
+      else if (snd === 'honk') sound.playHonk();
+      else if (snd === 'boing') sound.playBoing();
+      else if (snd === 'evil') sound.playEvilLaugh();
+      else if (snd === 'buzzer') sound.playBuzzer();
+      else if (snd === 'victory') sound.playVictory();
+    });
+  });
+
+  const btnExportSetup = document.getElementById('btnExportSetup');
+  if (btnExportSetup) {
+    btnExportSetup.addEventListener('click', () => {
+      const data = {
+        player: engine.getPlayerStats(),
+        customPrompts: promptService.getCustomPrompts()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cringe_meter_setup_${Date.now()}.json`;
+      a.click();
+      sound.playClick();
+    });
+  }
+
+  const btnResetData = document.getElementById('btnResetData');
+  if (btnResetData) {
+    btnResetData.addEventListener('click', () => {
+      if (confirm("Reset all Cringe Meter profile stats, custom prompts, and themes to default?")) {
+        engine.resetPlayerData();
+      }
+    });
+  }
+
+  // ==========================================
+  // ACCOUNT SIGN IN & AUTH CONTROLLER
+  // ==========================================
+  const authModal = document.getElementById('authModal');
+  const btnOpenAuthModal = document.getElementById('btnOpenAuthModal');
+  const btnCloseAuthModal = document.getElementById('btnCloseAuthModal');
+  const btnSubmitAuth = document.getElementById('btnSubmitAuth');
+  const btnAuthGuest = document.getElementById('btnAuthGuest');
+  const authUsernameInput = document.getElementById('authUsernameInput');
+  const authEmailInput = document.getElementById('authEmailInput');
+  const authPasswordInput = document.getElementById('authPasswordInput');
+  const accountStatusText = document.getElementById('accountStatusText');
+  const accountEmailText = document.getElementById('accountEmailText');
+  const btnAuthText = document.getElementById('btnAuthText');
+
+  function updateAccountUI() {
+    try {
+      const savedAccount = localStorage.getItem('cringe_meter_account');
+      if (savedAccount) {
+        const acc = JSON.parse(savedAccount);
+        if (accountStatusText) accountStatusText.textContent = "ACCOUNT SIGNED IN ✅";
+        if (accountEmailText) accountEmailText.textContent = acc.email || acc.username;
+        if (btnAuthText) btnAuthText.textContent = "SWITCH ACCOUNT";
+        if (engine) {
+          engine.signIn(acc.username || "HyperCringe_99");
+        }
+      } else {
+        if (accountStatusText) accountStatusText.textContent = "GUEST USER";
+        if (accountEmailText) accountEmailText.textContent = "Not Signed In (Anonymous)";
+        if (btnAuthText) btnAuthText.textContent = "SIGN IN";
+        if (engine) {
+          engine.signOut();
+        }
+      }
+    } catch (e) {}
+  }
+
+  updateAccountUI();
+
+  if (btnOpenAuthModal) {
+    btnOpenAuthModal.addEventListener('click', () => {
+      if (authModal) authModal.classList.remove('hidden');
+    });
+  }
+  if (btnCloseAuthModal) {
+    btnCloseAuthModal.addEventListener('click', () => {
+      if (authModal) authModal.classList.add('hidden');
+    });
+  }
+  if (btnAuthGuest) {
+    btnAuthGuest.addEventListener('click', () => {
+      localStorage.removeItem('cringe_meter_account');
+      updateAccountUI();
+      if (authModal) authModal.classList.add('hidden');
+    });
+  }
+  if (btnSubmitAuth) {
+    btnSubmitAuth.addEventListener('click', () => {
+      const username = authUsernameInput ? authUsernameInput.value.trim() : '';
+      const email = authEmailInput ? authEmailInput.value.trim() : '';
+      if (username || email) {
+        const accData = {
+          username: username || 'HyperCringe_99',
+          email: email || `${username || 'user'}@cringemeter.io`,
+          signedInAt: new Date().toISOString()
+        };
+        localStorage.setItem('cringe_meter_account', JSON.stringify(accData));
+        updateAccountUI();
+        if (authModal) authModal.classList.add('hidden');
+        sound.playClick();
+      } else {
+        alert("Please enter a username or email address.");
+      }
+    });
+  }
+});
