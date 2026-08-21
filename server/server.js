@@ -186,15 +186,15 @@ io.on('connection', (socket) => {
 });
 
 // Matchmaker runner
-function attemptMatchmaking() {
+async function attemptMatchmaking() {
   const match = matchmaking.findPair();
   if (match) {
     const { playerA, playerB } = match;
     const room = gameRooms.createRoom(playerA, playerB);
 
-    // Generate LiveKit tokens for both players
-    const tokenA = generateLiveKitToken(room.roomName, playerA.userId, playerA.displayName);
-    const tokenB = generateLiveKitToken(room.roomName, playerB.userId, playerB.displayName);
+    // Generate LiveKit tokens for both players (async JWT)
+    const tokenA = await generateLiveKitToken(room.roomName, playerA.userId, playerA.displayName);
+    const tokenB = await generateLiveKitToken(room.roomName, playerB.userId, playerB.displayName);
 
     const matchPayloadA = {
       sessionId: room.sessionId,
@@ -217,7 +217,7 @@ function attemptMatchmaking() {
     io.to(playerA.socketId).emit('match_found', matchPayloadA);
     io.to(playerB.socketId).emit('match_found', matchPayloadB);
 
-    console.log(`[MATCHMAKING] Emitted match_found to ${playerA.displayName} and ${playerB.displayName}`);
+    console.log(`[MATCHMAKING] Emitted match_found with LiveKit tokens to ${playerA.displayName} and ${playerB.displayName}`);
   }
 }
 

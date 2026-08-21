@@ -5,10 +5,10 @@
 
 const { AccessToken } = require('livekit-server-sdk');
 
-function generateLiveKitToken(roomName, participantIdentity, participantName) {
-  const apiKey = process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
-  const livekitUrl = process.env.LIVEKIT_URL || 'wss://cringe-meter-dev.livekit.cloud';
+async function generateLiveKitToken(roomName, participantIdentity, participantName) {
+  const apiKey = process.env.LIVEKIT_API_KEY || 'APIWzNPgyrfrxYr';
+  const apiSecret = process.env.LIVEKIT_API_SECRET || 'fvSTUgwsEcOpFicFH6PP6EoJbt5WfInWlKolrdombdt';
+  const livekitUrl = process.env.LIVEKIT_URL || 'wss://cringe-meter-gbi9jmfs.livekit.cloud';
 
   try {
     const at = new AccessToken(apiKey, apiSecret, {
@@ -25,7 +25,9 @@ function generateLiveKitToken(roomName, participantIdentity, participantName) {
       canPublishData: true
     });
 
-    const token = at.toJwt();
+    // In livekit-server-sdk v2+, toJwt() returns a Promise
+    const token = await at.toJwt();
+    console.log(`[LIVEKIT] Generated valid JWT token for ${participantName} (${participantIdentity}) in room ${roomName}`);
     return {
       token,
       url: livekitUrl,
@@ -33,7 +35,7 @@ function generateLiveKitToken(roomName, participantIdentity, participantName) {
       identity: participantIdentity
     };
   } catch (err) {
-    console.warn("LiveKit token generation error:", err.message);
+    console.warn("[LIVEKIT] Token generation error:", err.message);
     return {
       token: `mock_token_${Date.now()}`,
       url: livekitUrl,
