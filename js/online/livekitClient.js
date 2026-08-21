@@ -7,7 +7,6 @@ class LiveKitClientEngine {
   constructor() {
     this.room = null;
     this.localStream = null;
-    this.remoteStream = null;
     this.micMuted = false;
     this.cameraOff = false;
     this.callbacks = {};
@@ -17,83 +16,158 @@ class LiveKitClientEngine {
     this.callbacks = { ...this.callbacks, ...cbs };
   }
 
+  getLiveKitSDK() {
+    return window.LivekitClient || window.LiveKit || window.livekit || null;
+  }
+
   async connectAndPublish(livekitConfig, localVideoEl, remoteVideoEl) {
     this.disconnect();
     this.micMuted = false;
     this.cameraOff = false;
 
+    // Reset visual states
+    const simulated = document.getElementById('simulatedOppVideo');
+    const oppPlaceholder = document.getElementById('oppCameraOffPlaceholder');
+    const camFallback = document.getElementById('camFallback');
+
     try {
       // 1. Start local camera feed preview first
       await this.startLocalMedia(localVideoEl);
 
-      // 2. Connect to LiveKit Cloud if SDK available and token is valid
-      if (window.LivekitClient && livekitConfig && livekitConfig.token && !livekitConfig.isMock) {
-        const { Room, RoomEvent, VideoPresets } = window.LivekitClient;
+      // 2. Connect to LiveKit Cloud if SDK is loaded and token is valid
+      const LK = this.getLiveKitSDK();
+      if (LK && livekitConfig && livekitConfig.token && !livekitConfig.isMock) {
+        const { Room, RoomEvent, VideoPresets, Track } = LK;
 
         this.room = new Room({
           adaptiveStream: true,
           dynacast: true,
           videoCaptureDefaults: {
-            resolution: VideoPresets.h720.resolution
+            resolution: VideoPresets.h720 ? VideoPresets.h720.resolution : { width: 1280, height: 720 }
           }
         });
 
         // Track Subscribed Event (Remote stranger video/audio track)
         this.room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-          console.log(`[LIVEKIT] Subscribed to ${participant.identity} track: ${track.kind}`);
-          if (track.kind === 'video' && remoteVideoEl) {
-            const mediaStream = new MediaStream([track.mediaStreamTrack]);
-            remoteVideoEl.srcObject = mediaStream;
-            remoteVideoEl.setAttribute('playsinline', 'true');
-            remoteVideoEl.setAttribute('webkit-playsinline', 'true');
-            remoteVideoEl.classList.remove('hidden');
-            remoteVideoEl.play().catch(e => console.warn("[LIVEKIT] iOS remote video play:", e.message));
+          console.log(`[LIVEKIT] Subscribed to ${participant.identity} track (${track.kind})`);
+          this.attachRemoteTrack(track, remoteVideoEl);
+        });
 
-            const placeholder = document.getElementById('oppCameraOffPlaceholder');
-            if (placeholder) placeholder.classList.add('hidden');
-          } else if (track.kind === 'audio') {
-            const audioEl = document.createElement('audio');
-            audioEl.autoplay = true;
-            audioEl.setAttribute('playsinline', 'true');
-            audioEl.srcObject = new MediaStream([track.mediaStreamTrack]);
-            document.body.appendChild(audioEl);
-            audioEl.play().catch(e => console.warn("[LIVEKIT] iOS audio play:", e.message));
+        // Track Unsubscribed
+        this.room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+          console.log(`[LIVEKIT] Unsubscribed from ${participant.identity} track`);
+          if (track.kind === 'video') {
+            if (remoteVideoEl) {
+              remoteVideoEl.classList.add('hidden');
+              remoteVideoEl.srcObject = null;
+            }
+            if (simulated) {
+              simulated.classList.remove('hidden');
+              simulated.style.display = 'flex';
+            }
           }
         });
 
         // Track Muted/Unmuted (Stranger Camera Off/On)
         this.room.on(RoomEvent.TrackMuted, (publication, participant) => {
           if (publication.kind === 'video') {
-            const placeholder = document.getElementById('oppCameraOffPlaceholder');
-            if (placeholder) placeholder.classList.remove('hidden');
+            if (oppPlaceholder) oppPlaceholder.classList.remove('hidden');
+            if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
           }
         });
 
         this.room.on(RoomEvent.TrackUnmuted, (publication, participant) => {
           if (publication.kind === 'video') {
-            const placeholder = document.getElementById('oppCameraOffPlaceholder');
-            if (placeholder) placeholder.classList.add('hidden');
+            if (oppPlaceholder) oppPlaceholder.classList.add('hidden');
+            if (remoteVideoEl) {
+              remoteVideoEl.classList.remove('hidden');
+              remoteVideoEl.style.display = 'block';
+            }
           }
         });
 
-        // Connect & publish camera + mic
+        // Connect to LiveKit room
         await this.room.connect(livekitConfig.url, livekitConfig.token);
-        console.log(`[LIVEKIT] Connected to room ${livekitConfig.roomName}`);
+        console.log(`[LIVEKIT] Successfully connected to room: ${livekitConfig.roomName}`);
 
-        await this.room.localParticipant.enableCameraAndMicrophone();
-        console.log("[LIVEKIT] Local camera and microphone published.");
+        // Check for any participants already present in the room
+        if (this.room.remoteParticipants) {
+          this.room.remoteParticipants.forEach(participant => {
+            if (participant.trackPublications) {
+              participant.trackPublications.forEach(pub => {
+                if (pub.track) {
+                  this.attachRemoteTrack(pub.track, remoteVideoEl);
+                }
+              });
+            }
+          });
+        }
+
+        // Publish local camera & microphone
+        if (this.room.localParticipant) {
+          await this.room.localParticipant.setCameraEnabled(true);
+          await this.room.localParticipant.setMicrophoneEnabled(true);
+          console.log("[LIVEKIT] Local camera & mic enabled in LiveKit room.");
+        }
       } else {
-        console.log("[LIVEKIT] Using WebRTC media stream mode.");
+        console.log("[LIVEKIT] Running in local media preview mode.");
       }
     } catch (err) {
-      console.warn("LiveKit connection / media publish fallback:", err.message);
+      console.warn("[LIVEKIT] Connection / media publish error:", err.message);
       if (this.callbacks.onMediaError) {
         this.callbacks.onMediaError(err.message);
       }
     }
   }
 
+  attachRemoteTrack(track, remoteVideoEl) {
+    const simulated = document.getElementById('simulatedOppVideo');
+    const oppPlaceholder = document.getElementById('oppCameraOffPlaceholder');
+
+    if (track.kind === 'video' && remoteVideoEl) {
+      // Hide simulated placeholder and camera off box
+      if (simulated) {
+        simulated.classList.add('hidden');
+        simulated.style.display = 'none';
+      }
+      if (oppPlaceholder) {
+        oppPlaceholder.classList.add('hidden');
+      }
+
+      // Attach track to video element
+      if (typeof track.attach === 'function') {
+        track.attach(remoteVideoEl);
+      } else if (track.mediaStreamTrack) {
+        remoteVideoEl.srcObject = new MediaStream([track.mediaStreamTrack]);
+      }
+
+      remoteVideoEl.muted = true; // Audio is handled separately
+      remoteVideoEl.setAttribute('playsinline', 'true');
+      remoteVideoEl.setAttribute('webkit-playsinline', 'true');
+      remoteVideoEl.classList.remove('hidden');
+      remoteVideoEl.style.display = 'block';
+
+      remoteVideoEl.play().catch(e => console.warn("[LIVEKIT] Remote video play policy:", e.message));
+      console.log("[LIVEKIT] Remote video stream attached and displayed.");
+    } else if (track.kind === 'audio') {
+      if (typeof track.attach === 'function') {
+        const audioEl = track.attach();
+        audioEl.setAttribute('playsinline', 'true');
+        audioEl.setAttribute('webkit-playsinline', 'true');
+        document.body.appendChild(audioEl);
+      } else if (track.mediaStreamTrack) {
+        const audioEl = document.createElement('audio');
+        audioEl.autoplay = true;
+        audioEl.setAttribute('playsinline', 'true');
+        audioEl.srcObject = new MediaStream([track.mediaStreamTrack]);
+        document.body.appendChild(audioEl);
+        audioEl.play().catch(e => console.warn("[LIVEKIT] Audio play policy:", e.message));
+      }
+    }
+  }
+
   async startLocalMedia(localVideoEl) {
+    const camFallback = document.getElementById('camFallback');
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -103,20 +177,26 @@ class LiveKitClientEngine {
 
         if (localVideoEl) {
           localVideoEl.srcObject = this.localStream;
+          localVideoEl.muted = true;
           localVideoEl.setAttribute('playsinline', 'true');
           localVideoEl.setAttribute('webkit-playsinline', 'true');
           localVideoEl.classList.remove('hidden');
-          localVideoEl.play().catch(e => console.warn("[LIVEKIT] iOS local video play:", e.message));
+          localVideoEl.style.display = 'block';
 
-          const fallback = document.getElementById('camFallback');
-          if (fallback) fallback.classList.add('hidden');
+          if (camFallback) {
+            camFallback.classList.add('hidden');
+            camFallback.style.display = 'none';
+          }
+
+          localVideoEl.play().catch(e => console.warn("[LIVEKIT] Local video play policy:", e.message));
         }
       }
     } catch (err) {
-      console.warn("Camera/Mic access error:", err.name, err.message);
-      const fallback = document.getElementById('camFallback');
-      if (fallback) {
-        fallback.innerHTML = `<span class="cam-fallback-text" style="color:var(--accent-magenta);">TAP TO ALLOW CAMERA ACCESS</span>`;
+      console.warn("[LIVEKIT] Camera/Mic access error:", err.name, err.message);
+      if (camFallback) {
+        camFallback.classList.remove('hidden');
+        camFallback.style.display = 'flex';
+        camFallback.innerHTML = `<span class="cam-fallback-text" style="color:var(--accent-magenta);">CAMERA NOT ACTIVE</span>`;
       }
     }
   }
@@ -153,6 +233,23 @@ class LiveKitClientEngine {
     if (this.localStream) {
       this.localStream.getTracks().forEach(t => t.stop());
       this.localStream = null;
+    }
+
+    const simulated = document.getElementById('simulatedOppVideo');
+    const oppPlaceholder = document.getElementById('oppCameraOffPlaceholder');
+    const remoteVideoEl = document.getElementById('remoteVideoFeed');
+
+    if (remoteVideoEl) {
+      remoteVideoEl.classList.add('hidden');
+      remoteVideoEl.style.display = 'none';
+      remoteVideoEl.srcObject = null;
+    }
+    if (simulated) {
+      simulated.classList.remove('hidden');
+      simulated.style.display = 'flex';
+    }
+    if (oppPlaceholder) {
+      oppPlaceholder.classList.add('hidden');
     }
   }
 }
