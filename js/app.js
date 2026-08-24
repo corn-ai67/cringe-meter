@@ -298,8 +298,14 @@ document.addEventListener('DOMContentLoaded', () => {
       rwCoinsVal.textContent = results.isWinner ? (isVipWinner ? `+${results.earnedCoins || 100} COINS (2× VIP)` : `+${results.earnedCoins || 50} COINS`) : "+0 COINS";
       rwStreakVal.textContent = results.isWinner ? "+1 STREAK" : "STREAK RESET";
 
-      resRankName.textContent = updatedPlayer.rank;
-      resRankXp.textContent = `${updatedPlayer.xp.toLocaleString()} / 5,000 XP`;
+      if (window.progressionService) {
+        const prog = window.progressionService.getPlayerProgress(updatedPlayer.xp);
+        resRankName.textContent = prog.rankTitle;
+        resRankXp.textContent = `${prog.currentLevelXp.toLocaleString()} / ${prog.xpForNextLevel.toLocaleString()} XP`;
+      } else {
+        resRankName.textContent = updatedPlayer.rank;
+        resRankXp.textContent = `${(updatedPlayer.xp || 0).toLocaleString()} XP`;
+      }
       recapMode.textContent = `${results.mode} (60s)`;
       recapTime.textContent = results.timeElapsed;
       recapPeak.textContent = results.peakCringe;

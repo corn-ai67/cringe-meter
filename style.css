@@ -3733,17 +3733,78 @@ kbd {
    RESPONSIVE DESIGN & ADAPTIVE VIEWPORTS (iPhone, iPad, PC)
    ========================================================================== */
 
-/* iOS Safari Safe Area Inset Support */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .app-header {
-    padding-top: max(8px, env(safe-area-inset-top));
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    height: calc(56px + max(0px, env(safe-area-inset-top)));
+/* 📱 Mobile Landing State: Hide in-app header, bottom nav & indicator before entering */
+@media (max-width: 1023px) {
+  body.app-not-entered #appHeader,
+  .app-not-entered .app-header {
+    display: none !important;
   }
 
-  .mobile-frame {
-    padding-bottom: env(safe-area-inset-bottom);
+  body.app-not-entered #bottomNav,
+  .app-not-entered .bottom-nav {
+    display: none !important;
+  }
+
+  body.app-not-entered .home-indicator,
+  .app-not-entered .home-indicator {
+    display: none !important;
+  }
+
+  /* 4-Item Evenly Spaced Mobile Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    background: rgba(18, 20, 29, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--bg-card-border);
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    align-items: center;
+    padding: 0 4px env(safe-area-inset-bottom, 0px) 4px;
+    z-index: 100;
+    box-sizing: border-box;
+  }
+
+  .nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 0;
+    height: 100%;
+    width: 100%;
+    transition: color 0.15s ease;
+  }
+
+  .nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-btn.active {
+    color: var(--accent-magenta);
+  }
+
+  /* In-app views scroll clearance above bottom nav */
+  .app-entered .views-container {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .app-entered .view-screen {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
@@ -3771,17 +3832,74 @@ kbd {
     display: none !important;
   }
 
+  /* Compact In-App Mobile Header: Hide oversized Cringe Studio pill button */
+  #btnHeaderMakeMine,
+  .make-mine-pill {
+    display: none !important;
+  }
+
+  .app-header {
+    height: calc(52px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 14px 0 14px;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .user-badge {
     display: flex !important;
+    align-items: center;
+    gap: 8px;
+    max-width: 60%;
+  }
+
+  .user-name {
+    font-size: 0.84rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .currency-hud {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-pill {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+
+  /* Clean Mobile Landing Page */
+  #view-landing {
+    width: 100%;
+    min-height: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding: max(24px, env(safe-area-inset-top, 16px)) 16px max(40px, env(safe-area-inset-bottom, 20px)) 16px !important;
+  }
+
+  .landing-hero-container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
   }
 
   .landing-showcase-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+    width: 100%;
   }
 
   .landing-main-title {
-    font-size: 2.4rem;
+    font-size: 2.5rem;
   }
 
   .video-arena-split {
