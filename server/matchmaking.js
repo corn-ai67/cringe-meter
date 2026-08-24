@@ -11,12 +11,12 @@ class MatchmakingQueue {
   }
 
   addToQueue(playerData, socketId) {
-    // Remove any existing entry for this socketId or userId
-    this.removeFromQueue(socketId, playerData.userId);
+    // Remove any previous queue entry for this specific socket
+    this.removeFromQueue(socketId);
 
     const entry = {
       socketId,
-      userId: playerData.userId,
+      userId: playerData.userId || `cm_guest_${socketId.substring(0, 6)}`,
       displayName: playerData.displayName || 'Stranger',
       avatar: playerData.avatar || '🤡',
       rankTitle: playerData.rankTitle || 'Unbreakable',
@@ -24,19 +24,15 @@ class MatchmakingQueue {
     };
 
     this.queue.push(entry);
-    console.log(`[MATCHMAKING] Queued user: ${entry.displayName} (${entry.userId}). Queue size: ${this.queue.length}`);
+    console.log(`[MATCHMAKING] Queued socket: ${entry.displayName} (${entry.userId} - ${entry.socketId}). Queue size: ${this.queue.length}`);
     return entry;
   }
 
-  removeFromQueue(socketId, userId = null) {
+  removeFromQueue(socketId) {
     const initialLen = this.queue.length;
-    this.queue = this.queue.filter(item => {
-      if (item.socketId === socketId) return false;
-      if (userId && item.userId === userId) return false;
-      return true;
-    });
+    this.queue = this.queue.filter(item => item.socketId !== socketId);
     if (this.queue.length !== initialLen) {
-      console.log(`[MATCHMAKING] Removed user from queue. Queue size: ${this.queue.length}`);
+      console.log(`[MATCHMAKING] Removed socket from queue: ${socketId}. Queue size: ${this.queue.length}`);
     }
   }
 
@@ -48,13 +44,13 @@ class MatchmakingQueue {
         const playerA = this.queue[i];
         const playerB = this.queue[j];
 
-        // Ensure different users and not blocked
-        if (playerA.userId !== playerB.userId && !safetyManager.isBlocked(playerA.userId, playerB.userId)) {
+        // Ensure distinct active socket connections and not blocked
+        if (playerA.socketId !== playerB.socketId && !safetyManager.isBlocked(playerA.userId, playerB.userId)) {
           // Remove both from queue
           this.queue.splice(j, 1);
           this.queue.splice(i, 1);
 
-          console.log(`[MATCHMAKING] Matched: ${playerA.displayName} ↔ ${playerB.displayName}`);
+          console.log(`[MATCHMAKING] Matched: ${playerA.displayName} (${playerA.socketId}) ↔ ${playerB.displayName} (${playerB.socketId})`);
           return { playerA, playerB };
         }
       }

@@ -14,8 +14,8 @@ class OnlineMatchmakingClient {
 
     // Detect server URL: support HTTPS tunnels, direct mobile LAN, and local dev
     let serverUrl;
-    if (window.location.port === '8080' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      serverUrl = 'http://localhost:3000';
+    if (window.location.port === '8080') {
+      serverUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
     } else if (window.location.origin && window.location.origin !== 'null' && window.location.protocol.startsWith('http')) {
       serverUrl = window.location.origin;
     } else {

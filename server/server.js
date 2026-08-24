@@ -341,9 +341,12 @@ async function attemptMatchmaking() {
   const livekitRoomName = `cringe_room_${room.sessionId}`;
 
   try {
+    const identityA = `${playerA.userId || 'guest'}_${playerA.socketId.substring(0, 6)}`;
+    const identityB = `${playerB.userId || 'guest'}_${playerB.socketId.substring(0, 6)}`;
+
     const [tokenA, tokenB] = await Promise.all([
-      generateLiveKitToken(livekitRoomName, playerA.userId, playerA.displayName),
-      generateLiveKitToken(livekitRoomName, playerB.userId, playerB.displayName)
+      generateLiveKitToken(livekitRoomName, identityA, playerA.displayName),
+      generateLiveKitToken(livekitRoomName, identityB, playerB.displayName)
     ]);
 
     const livekitUrl = process.env.LIVEKIT_URL || 'wss://cringe-meter-gbi9jmfs.livekit.cloud';
