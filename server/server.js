@@ -13,6 +13,7 @@ const matchmaking = require('./matchmaking');
 const gameRooms = require('./gameRooms');
 const { generateLiveKitToken } = require('./livekit');
 const safetyManager = require('./reports');
+const leaderboardStore = require('./leaderboardStore');
 
 const path = require('path');
 const app = express();
@@ -38,7 +39,7 @@ app.post('/api/reports', (req, res) => {
   res.json({ success: true, report });
 });
 
-// Subscription status endpoint (Architecture prepared for payment provider webhooks)
+// Subscription status endpoint
 app.get('/api/subscription/status/:userId', (req, res) => {
   const userId = req.params.userId;
   res.json({
@@ -49,6 +50,35 @@ app.get('/api/subscription/status/:userId', (req, res) => {
     vipStatus: 'FREE',
     vipExpiresAt: null
   });
+});
+
+// Leaderboard endpoints
+app.get('/api/leaderboard', (req, res) => {
+  const type = req.query.type || 'global';
+  const limit = parseInt(req.query.limit, 10) || 50;
+  const search = req.query.search || '';
+  const result = leaderboardStore.getLeaderboard(type, limit, search);
+  res.json({ success: true, ...result });
+});
+
+app.get('/api/leaderboard/me', (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ success: false, message: 'Missing userId' });
+  const result = leaderboardStore.getPlayerRank(userId);
+  res.json({ success: true, ...result });
+});
+
+app.post('/api/leaderboard/record-match', (req, res) => {
+  const { winner, loser } = req.body;
+  leaderboardStore.recordMatchResult(winner, loser);
+  if (io) io.emit('leaderboard_updated', { type: 'match_finished' });
+  res.json({ success: true });
+});
+
+app.post('/api/leaderboard/sync-player', (req, res) => {
+  const player = leaderboardStore.upsertPlayer(req.body);
+  if (io) io.emit('leaderboard_updated', { type: 'player_synced' });
+  res.json({ success: true, player });
 });
 
 const server = http.createServer(app);
@@ -105,6 +135,12 @@ io.on('connection', (socket) => {
     if (room) {
       const isPerformer = (socket.id === room.performerSocketId);
       const winnerId = isPerformer ? room.reactorId : room.performerId;
+      const loserId = isPerformer ? room.performerId : room.reactorId;
+      const winnerObj = (winnerId === room.playerA.userId) ? room.playerA : room.playerB;
+      const loserObj = (loserId === room.playerA.userId) ? room.playerA : room.playerB;
+
+      leaderboardStore.recordMatchResult(winnerObj, loserObj);
+      io.emit('leaderboard_updated', { type: 'round_finished' });
 
       const resultPayload = {
         sessionId: room.sessionId,

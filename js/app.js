@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lucide.createIcons();
   }
 
+  if (window.leaderboardService) {
+    window.leaderboardService.init();
+  }
+
   const engine = window.gameEngine;
   const sound = window.soundEngine;
   const faceSensor = window.faceDetectorService;
@@ -152,6 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    if (viewId === 'view-leaderboard' && window.leaderboardService) {
+      window.leaderboardService.loadAndRender();
+    } else if (viewId === 'view-home' && window.leaderboardService) {
+      window.leaderboardService.renderHomeTopPerformers();
+    }
+
     sound.playClick();
   }
 
@@ -161,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       const targetView = btn.dataset.view;
       switchView(targetView);
-      if (targetView === 'view-leaderboard') {
-        renderLeaderboard();
+      if (targetView === 'view-leaderboard' && window.leaderboardService) {
+        window.leaderboardService.loadAndRender();
       }
     });
   });
@@ -279,6 +289,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultIcon.textContent = "💀";
         resultBanner.style.color = "var(--accent-magenta)";
+      }
+
+      if (window.leaderboardService) {
+        window.leaderboardService.recordMatchOutcome(results.isWinner, updatedPlayer);
       }
 
       switchView('view-results');
@@ -496,26 +510,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function renderLeaderboard() {
-    const list = engine.getLeaderboard();
-    leaderboardList.innerHTML = "";
-
-    list.forEach(item => {
-      const row = document.createElement('div');
-      row.className = `lb-item top-${item.rank} ${item.isPlayer ? 'lb-is-player' : ''}`;
-      const avatarContent = item.isPlayer && engine.player.avatarPhoto ? 
-        `<img src="${engine.player.avatarPhoto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" />` : 
-        item.avatar;
-      row.innerHTML = `
-        <span class="lb-rank">#${item.rank}</span>
-        <span class="lb-avatar">${avatarContent}</span>
-        <div class="lb-user-info">
-          <span class="lb-name">${item.name} ${item.isPlayer ? '⭐ (YOU)' : ''}</span>
-          <span class="lb-sub">🔥 ${item.streak} Win Streak • ${item.title}</span>
-        </div>
-        <span class="lb-score">${item.score}</span>
-      `;
-      leaderboardList.appendChild(row);
-    });
+    if (window.leaderboardService) {
+      window.leaderboardService.loadAndRender();
+    }
   }
 
   const roomModal = document.getElementById('roomModal');

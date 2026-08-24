@@ -543,8 +543,20 @@
             <button class="tab-pill" id="lbTabWeekly">WEEKLY</button>
           </div>
 
+          <!-- Player Search Input -->
+          <div class="leaderboard-search-bar">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="leaderboardSearchInput" placeholder="Search player by name..." autocomplete="off" />
+            <button class="btn-clear-search hidden" id="btnClearLeaderboardSearch" title="Clear search"><i data-lucide="x"></i></button>
+          </div>
+
           <div class="leaderboard-list" id="leaderboardList">
-            <!-- Items injected by JS -->
+            <!-- Items injected by LeaderboardService -->
+          </div>
+
+          <!-- Sticky / Summary User Rank Card -->
+          <div class="user-rank-summary-card hidden" id="userRankSummaryCard">
+            <!-- Injected by LeaderboardService -->
           </div>
         </div>
       </section>
@@ -1139,6 +1151,7 @@
   <script src="js/online/reactionAnalyzer.js"></script>
   <script src="js/online/onlineBattle.js"></script>
   <script src="js/pcControls.js"></script>
+  <script src="js/services/leaderboardService.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
