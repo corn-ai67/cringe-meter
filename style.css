@@ -1968,22 +1968,116 @@ kbd {
 }
 
 /* ==========================================================================
-   🖥️ 3. PC & LAPTOPS LANDSCAPE (width >= 1025px)
+   🖥️ 3. PC & LAPTOPS LANDSCAPE (width >= 1024px)
    ========================================================================== */
-@media (min-width: 1025px) {
-  .mobile-frame {
-    width: 100vw;
-    height: 100vh;
-    height: -webkit-fill-available;
-    max-width: 100%;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
+@media (min-width: 1024px) {
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
+  .mobile-wrapper-body {
+    width: 100vw;
+    min-height: 100vh;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    background: var(--bg-primary);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .mobile-frame {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+  }
+
+  .views-container {
+    flex: 1 0 auto;
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    height: auto;
+    position: relative;
+    overflow: visible;
+  }
+
+  body.app-not-entered .views-container {
+    min-height: 100vh;
+  }
+
+  .view-screen {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    height: auto;
+    padding: 24px 36px;
+    overflow: visible;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .view-screen.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  /* Desktop Top Header HUD */
   .app-header {
     height: 64px;
-    padding: 0 32px;
+    padding: 0 36px;
+    width: 100vw;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 13, 22, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  body.app-not-entered .app-header {
+    display: none !important;
+  }
+
+  body.app-entered .app-header {
+    display: flex !important;
+    animation: headerFadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes headerFadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .pc-brand-header {
@@ -1998,7 +2092,8 @@ kbd {
 
   .desktop-nav-bar {
     display: flex !important;
-    gap: 10px;
+    gap: 12px;
+    align-items: center;
   }
 
   .bottom-nav {
@@ -3262,8 +3357,8 @@ kbd {
   }
 }
 
-/* 📱 2. Tablets & iPad (601px - 1024px) */
-@media (min-width: 601px) and (max-width: 1024px) {
+/* 📱 2. Tablets & iPad (601px - 1023px) */
+@media (min-width: 601px) and (max-width: 1023px) {
   .mobile-frame {
     width: 94vw !important;
     max-width: 768px !important;
@@ -3294,15 +3389,18 @@ kbd {
   }
 }
 
-/* 🖥️ 3. PC & Desktop Screens (>= 1025px) */
-@media (min-width: 1025px) {
+/* 🖥️ 3. PC & Desktop Screens (>= 1024px) */
+@media (min-width: 1024px) {
   .mobile-frame {
-    width: 92vw !important;
-    max-width: 1360px !important;
-    height: 92vh !important;
-    border-radius: 24px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.08) !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .desktop-nav-bar {
@@ -3314,15 +3412,47 @@ kbd {
     display: flex !important;
   }
 
+  #view-landing {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 24px 60px;
+  }
+
+  #view-landing.active {
+    display: flex;
+  }
+
+  .landing-hero-container {
+    max-width: 1280px;
+    margin: auto;
+    padding: 24px 0;
+    gap: 36px;
+  }
+
   .landing-showcase-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    gap: 28px;
+    max-width: 1040px;
   }
 
   .landing-main-title {
-    font-size: 3.8rem;
+    font-size: clamp(3.6rem, 5.5vw, 5.2rem);
+  }
+
+  .landing-hero-tagline {
+    font-size: 1.05rem;
+    letter-spacing: 3px;
+  }
+
+  .btn-landing-cta {
+    padding: 16px 52px;
+    font-size: 1.15rem;
   }
 }
+
 
 
 

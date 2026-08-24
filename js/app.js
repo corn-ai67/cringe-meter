@@ -101,8 +101,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCloseAvatarModal = document.getElementById('btnCloseAvatarModal');
   const avatarGrid = document.getElementById('avatarGrid');
 
+  // Navigation State
+  let appEntered = false;
+  document.body.classList.add('app-not-entered');
+  document.body.classList.remove('app-entered');
+
+  function enterApp(targetView = 'view-home') {
+    appEntered = true;
+    document.body.classList.remove('app-not-entered');
+    document.body.classList.add('app-entered');
+    switchView(targetView);
+  }
+
+  window.enterApp = enterApp;
+
   // Helper Functions: View Navigation
   function switchView(viewId) {
+    if (viewId !== 'view-landing' && !appEntered) {
+      appEntered = true;
+      document.body.classList.remove('app-not-entered');
+      document.body.classList.add('app-entered');
+    }
+
     views.forEach(view => {
       if (view.id === viewId) {
         view.classList.add('active');
@@ -281,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function goToBattlesHome() {
     sound.playClick();
-    switchView('view-home');
+    enterApp('view-home');
   }
 
   if (btnLandingBattles) {
@@ -292,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (cardLandingStudio) {
     cardLandingStudio.addEventListener('click', () => {
+      enterApp('view-home');
       requestOpenCringeStudio('tab-identity');
     });
   }
