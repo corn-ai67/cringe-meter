@@ -1155,6 +1155,66 @@ html, body {
   margin-top: 6px;
 }
 
+/* Battles Page Mini Leaderboard & Empty State */
+.pc-mini-empty {
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--bg-card-border);
+}
+.pc-mini-empty-icon {
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+}
+.pc-mini-empty-title {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #FFF;
+  margin: 0;
+}
+.pc-mini-empty-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+.pc-lb-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  gap: 8px;
+  font-size: 0.78rem;
+}
+.pc-rank-badge {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 0.75rem;
+  min-width: 22px;
+}
+.pc-rank-badge.gold { color: #F59E0B; }
+.pc-rank-badge.silver { color: #E2E8F0; }
+.pc-rank-badge.bronze { color: #FBBF24; }
+.pc-lb-name {
+  flex: 1;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pc-lb-score {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
 @media (max-width: 600px) {
   .desktop-only {
     display: none !important;

@@ -1,13 +1,76 @@
 /**
  * CRINGE METER — Authoritative Server Leaderboard Store
- * Manages player ranking data, deterministic sorting, weekly boundaries, and live match updates.
+ * Manages persistent real player ranking data, deterministic sorting, weekly boundaries,
+ * and verified live match updates.
  */
+
+const fs = require('fs');
+const path = require('path');
+
+// Optional developer flag: MUST remain false in production
+const USE_DEV_LEADERBOARD_DATA = false;
+
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'leaderboard.json');
 
 class LeaderboardStore {
   constructor() {
     this.currentWeekId = this.computeWeekId();
     this.players = new Map();
-    this.initSeedData();
+    this.ensureDataDir();
+    this.loadFromDisk();
+  }
+
+  ensureDataDir() {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+    } catch (e) {
+      console.warn("[LEADERBOARD] Could not create data directory:", e.message);
+    }
+  }
+
+  loadFromDisk() {
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        const raw = fs.readFileSync(DATA_FILE, 'utf8');
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.players)) {
+          this.currentWeekId = data.weekId || this.computeWeekId();
+          this.players.clear();
+          data.players.forEach(p => {
+            // Only load real players with actual battle activity
+            const totalBattles = (p.wins || 0) + (p.losses || 0);
+            if (totalBattles > 0 || (p.totalBattles && p.totalBattles > 0)) {
+              this.players.set(p.userId, p);
+            }
+          });
+          console.log(`[LEADERBOARD] Loaded ${this.players.size} real player records from disk.`);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("[LEADERBOARD] Error reading leaderboard data file, starting clean:", e.message);
+    }
+
+    // Start with 0 real players
+    this.players.clear();
+    this.saveToDisk();
+  }
+
+  saveToDisk() {
+    try {
+      this.ensureDataDir();
+      const payload = {
+        weekId: this.currentWeekId,
+        updatedAt: new Date().toISOString(),
+        players: Array.from(this.players.values())
+      };
+      fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
+    } catch (e) {
+      console.warn("[LEADERBOARD] Could not persist leaderboard data to disk:", e.message);
+    }
   }
 
   computeWeekId() {
@@ -20,203 +83,58 @@ class LeaderboardStore {
     return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
   }
 
-  initSeedData() {
-    const seedPlayers = [
-      {
-        userId: "user_giggle_99",
-        displayName: "GiggleGod_99",
-        avatar: "🤡",
-        rankTitle: "DIAMOND II",
-        level: 28,
-        xp: 12850,
-        wins: 143,
-        losses: 2,
-        winRate: 98.6,
-        currentStreak: 24,
-        bestStreak: 34,
-        weeklyWins: 42,
-        weeklyScore: 4200,
-        totalScore: 12850,
-        isVip: true,
-        title: "ABSOLUTELY SHAMELESS"
-      },
-      {
-        userId: "user_stoneface_x",
-        displayName: "StoneFace_X",
-        avatar: "💀",
-        rankTitle: "DIAMOND I",
-        level: 25,
-        xp: 11920,
-        wins: 129,
-        losses: 6,
-        winRate: 95.5,
-        currentStreak: 18,
-        bestStreak: 29,
-        weeklyWins: 38,
-        weeklyScore: 3800,
-        totalScore: 11920,
-        isVip: true,
-        title: "STONE COLD KILLER"
-      },
-      {
-        userId: "user_cringedemon",
-        displayName: "CringeDemon",
-        avatar: "😈",
-        rankTitle: "PLATINUM I",
-        level: 22,
-        xp: 10800,
-        wins: 117,
-        losses: 9,
-        winRate: 92.8,
-        currentStreak: 27,
-        bestStreak: 31,
-        weeklyWins: 35,
-        weeklyScore: 3500,
-        totalScore: 10800,
-        isVip: false,
-        title: "UNBREAKABLE"
-      },
-      {
-        userId: "user_voidpoker",
-        displayName: "VoidPoker",
-        avatar: "👽",
-        rankTitle: "PLATINUM II",
-        level: 20,
-        xp: 9450,
-        wins: 98,
-        losses: 12,
-        winRate: 89.1,
-        currentStreak: 12,
-        bestStreak: 22,
-        weeklyWins: 29,
-        weeklyScore: 2900,
-        totalScore: 9450,
-        isVip: false,
-        title: "POKER SPECIALIST"
-      },
-      {
-        userId: "user_memeoverlord",
-        displayName: "MemeOverlord_99",
-        avatar: "🤖",
-        rankTitle: "GOLD I",
-        level: 18,
-        xp: 8200,
-        wins: 84,
-        losses: 14,
-        winRate: 85.7,
-        currentStreak: 15,
-        bestStreak: 19,
-        weeklyWins: 26,
-        weeklyScore: 2600,
-        totalScore: 8200,
-        isVip: true,
-        title: "TIKTOK MENACE"
-      },
-      {
-        userId: "user_pokerqueen",
-        displayName: "PokerQueen",
-        avatar: "👑",
-        rankTitle: "GOLD II",
-        level: 16,
-        xp: 7350,
-        wins: 72,
-        losses: 15,
-        winRate: 82.8,
-        currentStreak: 9,
-        bestStreak: 16,
-        weeklyWins: 21,
-        weeklyScore: 2100,
-        totalScore: 7350,
-        isVip: false,
-        title: "ZERO REACTION"
-      },
-      {
-        userId: "user_deadpan",
-        displayName: "DeadpanDave",
-        avatar: "🗿",
-        rankTitle: "SILVER I",
-        level: 14,
-        xp: 6100,
-        wins: 58,
-        losses: 16,
-        winRate: 78.4,
-        currentStreak: 11,
-        bestStreak: 14,
-        weeklyWins: 18,
-        weeklyScore: 1800,
-        totalScore: 6100,
-        isVip: false,
-        title: "SPECTRE OF CRINGE"
-      },
-      {
-        userId: "user_laughinggas",
-        displayName: "LaughingGas",
-        avatar: "🤪",
-        rankTitle: "SILVER II",
-        level: 12,
-        xp: 4900,
-        wins: 45,
-        losses: 18,
-        winRate: 71.4,
-        currentStreak: 6,
-        bestStreak: 11,
-        weeklyWins: 15,
-        weeklyScore: 1500,
-        totalScore: 4900,
-        isVip: false,
-        title: "CRINGE ACOLYTE"
-      }
-    ];
-
-    seedPlayers.forEach(p => this.players.set(p.userId, p));
-  }
-
   checkWeeklyReset() {
     const current = this.computeWeekId();
     if (current !== this.currentWeekId) {
-      console.log(`[LEADERBOARD] Weekly reset from ${this.currentWeekId} to ${current}`);
+      console.log(`[LEADERBOARD] Weekly boundary reached. Resetting week from ${this.currentWeekId} to ${current}`);
       this.currentWeekId = current;
       this.players.forEach(p => {
         p.weeklyWins = 0;
         p.weeklyScore = 0;
       });
+      this.saveToDisk();
     }
   }
 
   getLeaderboard(type = 'global', limit = 50, search = '') {
     this.checkWeeklyReset();
-    let list = Array.from(this.players.values());
+    
+    // Only rank players who have completed at least one battle
+    let list = Array.from(this.players.values()).filter(p => {
+      const battles = (p.wins || 0) + (p.losses || 0) || (p.totalBattles || 0);
+      return battles > 0;
+    });
 
     // Filter by search query if provided
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter(p => p.displayName.toLowerCase().includes(q));
+      list = list.filter(p => (p.displayName || '').toLowerCase().includes(q));
     }
 
     // Deterministic Sorting
     if (type === 'streaks') {
       list.sort((a, b) => {
-        if (b.currentStreak !== a.currentStreak) return b.currentStreak - a.currentStreak;
-        if (b.bestStreak !== a.bestStreak) return b.bestStreak - a.bestStreak;
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        return a.displayName.localeCompare(b.displayName);
+        if ((b.currentStreak || 0) !== (a.currentStreak || 0)) return (b.currentStreak || 0) - (a.currentStreak || 0);
+        if ((b.bestStreak || 0) !== (a.bestStreak || 0)) return (b.bestStreak || 0) - (a.bestStreak || 0);
+        if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+        if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+        return (a.displayName || '').localeCompare(b.displayName || '');
       });
     } else if (type === 'weekly') {
       list.sort((a, b) => {
-        if (b.weeklyScore !== a.weeklyScore) return b.weeklyScore - a.weeklyScore;
-        if (b.weeklyWins !== a.weeklyWins) return b.weeklyWins - a.weeklyWins;
-        if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        return a.displayName.localeCompare(b.displayName);
+        if ((b.weeklyScore || 0) !== (a.weeklyScore || 0)) return (b.weeklyScore || 0) - (a.weeklyScore || 0);
+        if ((b.weeklyWins || 0) !== (a.weeklyWins || 0)) return (b.weeklyWins || 0) - (a.weeklyWins || 0);
+        if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0);
+        if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+        return (a.displayName || '').localeCompare(b.displayName || '');
       });
     } else {
-      // global top (default)
+      // Global top (default)
       list.sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        return a.displayName.localeCompare(b.displayName);
+        if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+        if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+        if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0);
+        return (a.displayName || '').localeCompare(b.displayName || '');
       });
     }
 
@@ -238,6 +156,12 @@ class LeaderboardStore {
     this.checkWeeklyReset();
     if (!this.players.has(userId)) return null;
 
+    const player = this.players.get(userId);
+    const battles = (player.wins || 0) + (player.losses || 0) || (player.totalBattles || 0);
+    if (battles === 0) {
+      return { userId, ranks: { global: null, streaks: null, weekly: null }, player };
+    }
+
     const globalSorted = this.getLeaderboard('global', 1000).players;
     const streaksSorted = this.getLeaderboard('streaks', 1000).players;
     const weeklySorted = this.getLeaderboard('weekly', 1000).players;
@@ -253,7 +177,7 @@ class LeaderboardStore {
         streaks: streaksRank > 0 ? streaksRank : null,
         weekly: weeklyRank > 0 ? weeklyRank : null
       },
-      player: this.players.get(userId)
+      player
     };
   }
 
@@ -270,7 +194,8 @@ class LeaderboardStore {
         xp: 0,
         wins: 0,
         losses: 0,
-        winRate: 100,
+        totalBattles: 0,
+        winRate: 0,
         currentStreak: 0,
         bestStreak: 0,
         weeklyWins: 0,
@@ -280,16 +205,19 @@ class LeaderboardStore {
         title: winnerData.title || "GUEST FIGHTER"
       };
 
-      winner.wins += 1;
-      winner.weeklyWins += 1;
-      winner.currentStreak += 1;
-      if (winner.currentStreak > winner.bestStreak) {
+      winner.wins = (winner.wins || 0) + 1;
+      winner.totalBattles = (winner.wins || 0) + (winner.losses || 0);
+      winner.weeklyWins = (winner.weeklyWins || 0) + 1;
+      winner.currentStreak = (winner.currentStreak || 0) + 1;
+      if (winner.currentStreak > (winner.bestStreak || 0)) {
         winner.bestStreak = winner.currentStreak;
       }
-      winner.totalScore += 150;
-      winner.weeklyScore += 150;
-      winner.xp += 150;
-      winner.winRate = Math.round((winner.wins / (winner.wins + winner.losses)) * 1000) / 10;
+      winner.totalScore = (winner.totalScore || 0) + 150;
+      winner.weeklyScore = (winner.weeklyScore || 0) + 150;
+      winner.xp = (winner.xp || 0) + 150;
+      winner.winRate = winner.totalBattles > 0 ?
+        Math.round((winner.wins / winner.totalBattles) * 1000) / 10 : 0;
+
       if (winnerData.isVip !== undefined) winner.isVip = winnerData.isVip;
       if (winnerData.displayName) winner.displayName = winnerData.displayName;
       if (winnerData.avatar) winner.avatar = winnerData.avatar;
@@ -308,6 +236,7 @@ class LeaderboardStore {
         xp: 0,
         wins: 0,
         losses: 0,
+        totalBattles: 0,
         winRate: 0,
         currentStreak: 0,
         bestStreak: 0,
@@ -318,12 +247,15 @@ class LeaderboardStore {
         title: loserData.title || "GUEST FIGHTER"
       };
 
-      loser.losses += 1;
+      loser.losses = (loser.losses || 0) + 1;
+      loser.totalBattles = (loser.wins || 0) + (loser.losses || 0);
       loser.currentStreak = 0;
-      loser.totalScore += 40;
-      loser.weeklyScore += 40;
-      loser.xp += 40;
-      loser.winRate = Math.round((loser.wins / (loser.wins + loser.losses)) * 1000) / 10;
+      loser.totalScore = (loser.totalScore || 0) + 40;
+      loser.weeklyScore = (loser.weeklyScore || 0) + 40;
+      loser.xp = (loser.xp || 0) + 40;
+      loser.winRate = loser.totalBattles > 0 ?
+        Math.round(((loser.wins || 0) / loser.totalBattles) * 1000) / 10 : 0;
+
       if (loserData.isVip !== undefined) loser.isVip = loserData.isVip;
       if (loserData.displayName) loser.displayName = loserData.displayName;
       if (loserData.avatar) loser.avatar = loserData.avatar;
@@ -332,27 +264,42 @@ class LeaderboardStore {
       this.players.set(loser.userId, loser);
     }
 
+    this.saveToDisk();
     return { success: true };
   }
 
   upsertPlayer(playerData) {
     if (!playerData || !playerData.userId) return null;
     const existing = this.players.get(playerData.userId) || {};
+    const wins = playerData.wins !== undefined ? playerData.wins : (existing.wins || 0);
+    const losses = playerData.losses !== undefined ? playerData.losses : (existing.losses || 0);
+    const totalBattles = wins + losses;
+
     const merged = {
       ...existing,
       ...playerData,
+      wins,
+      losses,
+      totalBattles,
       totalScore: playerData.xp !== undefined ? playerData.xp : (existing.totalScore || 0),
-      wins: playerData.wins !== undefined ? playerData.wins : (existing.wins || 0),
-      losses: playerData.losses !== undefined ? playerData.losses : (existing.losses || 0),
       currentStreak: playerData.streak !== undefined ? playerData.streak : (existing.currentStreak || 0),
       bestStreak: playerData.bestStreak !== undefined ? playerData.bestStreak : (existing.bestStreak || 0),
       weeklyScore: playerData.weeklyScore !== undefined ? playerData.weeklyScore : (existing.weeklyScore || 0),
       weeklyWins: playerData.weeklyWins !== undefined ? playerData.weeklyWins : (existing.weeklyWins || 0),
-      winRate: (playerData.wins !== undefined && playerData.losses !== undefined && (playerData.wins + playerData.losses > 0)) ?
-        Math.round((playerData.wins / (playerData.wins + playerData.losses)) * 1000) / 10 : (existing.winRate || 0)
+      winRate: totalBattles > 0 ? Math.round((wins / totalBattles) * 1000) / 10 : 0
     };
-    this.players.set(playerData.userId, merged);
+
+    if (totalBattles > 0) {
+      this.players.set(playerData.userId, merged);
+      this.saveToDisk();
+    }
     return merged;
+  }
+
+  clearAllData() {
+    this.players.clear();
+    this.saveToDisk();
+    console.log("[LEADERBOARD] Reset all leaderboard data to 0 players.");
   }
 }
 

@@ -11,16 +11,6 @@ const OPPONENT_POOL = [
   { name: "ViralBreakout", level: 25, avatar: "🔥", title: "TikTok Menace" }
 ];
 
-const GLOBAL_LEADERBOARD = [
-  { rank: 1, name: "StoneFace_Pro", avatar: "🗿", title: "Unbreakable", streak: 34, score: "9,850 XP" },
-  { rank: 2, name: "Gigachad_99", avatar: "😎", title: "Zero Reaction", streak: 28, score: "8,920 XP" },
-  { rank: 3, name: "ShadowGiggle_X", avatar: "🤖", title: "Cringe Overlord", streak: 21, score: "7,640 XP" },
-  { rank: 4, name: "HyperCringe_99", avatar: "🤡", title: "ABSOLUTELY SHAMELESS", streak: 7, score: "3,420 XP" },
-  { rank: 5, name: "ViralBreakout", avatar: "🔥", title: "TikTok Menace", streak: 14, score: "3,110 XP" },
-  { rank: 6, name: "NoSmilesAllowed", avatar: "😐", title: "Poker Specialist", streak: 9, score: "2,890 XP" },
-  { rank: 7, name: "PhantomLaughter", avatar: "👻", title: "Spectre of Cringe", streak: 6, score: "2,450 XP" }
-];
-
 class GameEngine {
   constructor() {
     this.player = {
@@ -47,7 +37,6 @@ class GameEngine {
     };
 
     this.loadPlayerData();
-    this.syncLeaderboard();
 
     this.activeMode = new window.DontLaughMode();
     this.activeMode.init(this);
@@ -94,13 +83,12 @@ class GameEngine {
   signIn(name = "HyperCringe_99") {
     this.player.isSignedIn = true;
     this.player.name = name;
-    this.player.avatar = "🤡";
-    this.player.rank = "Diamond II";
-    this.player.level = 14;
-    this.player.xp = 3420;
-    this.player.coins = 2450;
-    this.player.streak = 7;
-    this.player.title = "ABSOLUTELY SHAMELESS";
+    if (this.player.avatar === "👤") {
+      this.player.avatar = "🤡";
+    }
+    if (this.player.title === "GUEST FIGHTER") {
+      this.player.title = "ABSOLUTELY SHAMELESS";
+    }
     this.savePlayerData();
     if (this.uiCallbacks.onStatsUpdated) {
       this.uiCallbacks.onStatsUpdated(this.player);
@@ -116,6 +104,10 @@ class GameEngine {
     this.player.xp = 0;
     this.player.coins = 0;
     this.player.streak = 0;
+    this.player.bestStreak = 0;
+    this.player.totalMatches = 0;
+    this.player.peopleBroken = 0;
+    this.player.winRate = 0;
     this.player.title = "GUEST FIGHTER";
     this.savePlayerData();
     if (this.uiCallbacks.onStatsUpdated) {
@@ -128,22 +120,6 @@ class GameEngine {
       localStorage.setItem('cringe_meter_player_data', JSON.stringify(this.player));
     } catch (e) {
       console.warn("Could not save player data:", e);
-    }
-    this.syncLeaderboard();
-  }
-
-  syncLeaderboard() {
-    const existingIndex = GLOBAL_LEADERBOARD.findIndex(entry => entry.rank === 4 || entry.isPlayer);
-    if (existingIndex !== -1) {
-      GLOBAL_LEADERBOARD[existingIndex] = {
-        rank: 4,
-        name: this.player.name,
-        avatar: this.player.avatar,
-        title: this.player.title,
-        streak: this.player.streak,
-        score: `${this.player.xp.toLocaleString()} XP`,
-        isPlayer: true
-      };
     }
   }
 
@@ -298,7 +274,7 @@ class GameEngine {
   }
 
   getLeaderboard() {
-    return GLOBAL_LEADERBOARD;
+    return [];
   }
 }
 

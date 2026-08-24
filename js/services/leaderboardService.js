@@ -1,165 +1,12 @@
 /**
  * CRINGE METER — Leaderboard Service Module
  * Handles Multi-tab Leaderboard (Global Top, Win Streaks, Weekly), Search Filtering,
- * Backend Synchronization, Socket.IO Real-time Updates, and Fallback Dev Data.
+ * Backend Synchronization, Socket.IO Real-time Updates, and Verified Real Player Data.
  */
 
 (function() {
-  // DEV FALLBACK DATA (Used only if offline or local server is unreachable)
-  const DEV_FALLBACK_LEADERBOARD = [
-    {
-      userId: "user_giggle_99",
-      displayName: "GiggleGod_99",
-      avatar: "🤡",
-      avatarPhoto: null,
-      rankTitle: "DIAMOND II",
-      level: 28,
-      xp: 12850,
-      wins: 143,
-      losses: 2,
-      winRate: 98.6,
-      currentStreak: 24,
-      bestStreak: 34,
-      weeklyWins: 42,
-      weeklyScore: 4200,
-      totalScore: 12850,
-      isVip: true,
-      title: "ABSOLUTELY SHAMELESS"
-    },
-    {
-      userId: "user_stoneface_x",
-      displayName: "StoneFace_X",
-      avatar: "💀",
-      avatarPhoto: null,
-      rankTitle: "DIAMOND I",
-      level: 25,
-      xp: 11920,
-      wins: 129,
-      losses: 6,
-      winRate: 95.5,
-      currentStreak: 18,
-      bestStreak: 29,
-      weeklyWins: 38,
-      weeklyScore: 3800,
-      totalScore: 11920,
-      isVip: true,
-      title: "STONE COLD KILLER"
-    },
-    {
-      userId: "user_cringedemon",
-      displayName: "CringeDemon",
-      avatar: "😈",
-      avatarPhoto: null,
-      rankTitle: "PLATINUM I",
-      level: 22,
-      xp: 10800,
-      wins: 117,
-      losses: 9,
-      winRate: 92.8,
-      currentStreak: 27,
-      bestStreak: 31,
-      weeklyWins: 35,
-      weeklyScore: 3500,
-      totalScore: 10800,
-      isVip: false,
-      title: "UNBREAKABLE"
-    },
-    {
-      userId: "user_voidpoker",
-      displayName: "VoidPoker",
-      avatar: "👽",
-      avatarPhoto: null,
-      rankTitle: "PLATINUM II",
-      level: 20,
-      xp: 9450,
-      wins: 98,
-      losses: 12,
-      winRate: 89.1,
-      currentStreak: 12,
-      bestStreak: 22,
-      weeklyWins: 29,
-      weeklyScore: 2900,
-      totalScore: 9450,
-      isVip: false,
-      title: "POKER SPECIALIST"
-    },
-    {
-      userId: "user_memeoverlord",
-      displayName: "MemeOverlord_99",
-      avatar: "🤖",
-      avatarPhoto: null,
-      rankTitle: "GOLD I",
-      level: 18,
-      xp: 8200,
-      wins: 84,
-      losses: 14,
-      winRate: 85.7,
-      currentStreak: 15,
-      bestStreak: 19,
-      weeklyWins: 26,
-      weeklyScore: 2600,
-      totalScore: 8200,
-      isVip: true,
-      title: "TIKTOK MENACE"
-    },
-    {
-      userId: "user_pokerqueen",
-      displayName: "PokerQueen",
-      avatar: "👑",
-      avatarPhoto: null,
-      rankTitle: "GOLD II",
-      level: 16,
-      xp: 7350,
-      wins: 72,
-      losses: 15,
-      winRate: 82.8,
-      currentStreak: 9,
-      bestStreak: 16,
-      weeklyWins: 21,
-      weeklyScore: 2100,
-      totalScore: 7350,
-      isVip: false,
-      title: "ZERO REACTION"
-    },
-    {
-      userId: "user_deadpan",
-      displayName: "DeadpanDave",
-      avatar: "🗿",
-      avatarPhoto: null,
-      rankTitle: "SILVER I",
-      level: 14,
-      xp: 6100,
-      wins: 58,
-      losses: 16,
-      winRate: 78.4,
-      currentStreak: 11,
-      bestStreak: 14,
-      weeklyWins: 18,
-      weeklyScore: 1800,
-      totalScore: 6100,
-      isVip: false,
-      title: "SPECTRE OF CRINGE"
-    },
-    {
-      userId: "user_laughinggas",
-      displayName: "LaughingGas",
-      avatar: "🤪",
-      avatarPhoto: null,
-      rankTitle: "SILVER II",
-      level: 12,
-      xp: 4900,
-      wins: 45,
-      losses: 18,
-      winRate: 71.4,
-      currentStreak: 6,
-      bestStreak: 11,
-      weeklyWins: 15,
-      weeklyScore: 1500,
-      totalScore: 4900,
-      isVip: false,
-      title: "CRINGE ACOLYTE"
-    }
-  ];
+  // Optional developer flag: MUST remain false in production
+  const USE_DEV_LEADERBOARD_DATA = false;
 
   class LeaderboardService {
     constructor() {
@@ -172,7 +19,6 @@
       };
       this.isLoading = false;
       this.isError = false;
-      this.isDevFallback = false;
       this.initialized = false;
     }
 
@@ -239,7 +85,7 @@
           const socket = window.onlineBattleController?.socket;
           if (socket) {
             socket.on('leaderboard_updated', () => {
-              console.log("[LEADERBOARD] Real-time leaderboard update received.");
+              console.log("[LEADERBOARD] Real-time leaderboard update received from server.");
               this.invalidateCache();
               this.loadAndRender();
               this.renderHomeTopPerformers();
@@ -284,23 +130,31 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.success && Array.isArray(data.players)) {
-          this.isDevFallback = false;
-          return data.players;
+          // Filter to only players who have completed at least 1 battle
+          return data.players.filter(p => {
+            const battles = (p.wins || 0) + (p.losses || 0) || (p.totalBattles || 0);
+            return battles > 0;
+          });
         }
         throw new Error("Invalid response format");
       } catch (err) {
-        console.warn("[LEADERBOARD] API unavailable, using local synchronized data:", err.message);
-        this.isDevFallback = true;
+        console.warn("[LEADERBOARD] API unavailable, using local verified data:", err.message);
         return this.getLocalSortedFallback(type);
       }
     }
 
     getLocalSortedFallback(type) {
-      let list = JSON.parse(JSON.stringify(DEV_FALLBACK_LEADERBOARD));
+      let list = [];
 
-      // Inject / merge current local player
+      // If developer mode is explicitly enabled, load dev mock fixtures
+      if (USE_DEV_LEADERBOARD_DATA && window.DEV_MOCK_LEADERBOARD) {
+        list = JSON.parse(JSON.stringify(window.DEV_MOCK_LEADERBOARD));
+      }
+
+      // Inject local player ONLY if they have completed at least one battle
       const player = window.gameEngine?.getPlayerStats();
-      if (player) {
+      const totalMatches = player?.totalMatches || 0;
+      if (player && totalMatches > 0) {
         const localUserEntry = {
           userId: player.userId || "local_player_user",
           displayName: player.name || "Anonymous",
@@ -310,8 +164,9 @@
           level: player.level || 1,
           xp: player.xp || 0,
           wins: player.peopleBroken || 0,
-          losses: Math.max(0, (player.totalMatches || 0) - (player.peopleBroken || 0)),
-          winRate: (player.totalMatches > 0) ? Math.round(((player.peopleBroken || 0) / player.totalMatches) * 1000) / 10 : 0,
+          losses: Math.max(0, totalMatches - (player.peopleBroken || 0)),
+          totalBattles: totalMatches,
+          winRate: totalMatches > 0 ? Math.round(((player.peopleBroken || 0) / totalMatches) * 1000) / 10 : 0,
           currentStreak: player.streak || 0,
           bestStreak: player.bestStreak || player.streak || 0,
           weeklyWins: Math.floor((player.peopleBroken || 0) * 0.8),
@@ -333,27 +188,27 @@
       // Deterministic Sorting
       if (type === 'streaks') {
         list.sort((a, b) => {
-          if (b.currentStreak !== a.currentStreak) return b.currentStreak - a.currentStreak;
-          if (b.bestStreak !== a.bestStreak) return b.bestStreak - a.bestStreak;
-          if (b.wins !== a.wins) return b.wins - a.wins;
-          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-          return a.displayName.localeCompare(b.displayName);
+          if ((b.currentStreak || 0) !== (a.currentStreak || 0)) return (b.currentStreak || 0) - (a.currentStreak || 0);
+          if ((b.bestStreak || 0) !== (a.bestStreak || 0)) return (b.bestStreak || 0) - (a.bestStreak || 0);
+          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+          if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+          return (a.displayName || '').localeCompare(b.displayName || '');
         });
       } else if (type === 'weekly') {
         list.sort((a, b) => {
-          if (b.weeklyScore !== a.weeklyScore) return b.weeklyScore - a.weeklyScore;
-          if (b.weeklyWins !== a.weeklyWins) return b.weeklyWins - a.weeklyWins;
-          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-          return a.displayName.localeCompare(b.displayName);
+          if ((b.weeklyScore || 0) !== (a.weeklyScore || 0)) return (b.weeklyScore || 0) - (a.weeklyScore || 0);
+          if ((b.weeklyWins || 0) !== (a.weeklyWins || 0)) return (b.weeklyWins || 0) - (a.weeklyWins || 0);
+          if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0);
+          if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+          return (a.displayName || '').localeCompare(b.displayName || '');
         });
       } else {
         // Global Top
         list.sort((a, b) => {
-          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-          if (b.wins !== a.wins) return b.wins - a.wins;
-          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-          return a.displayName.localeCompare(b.displayName);
+          if ((b.totalScore || 0) !== (a.totalScore || 0)) return (b.totalScore || 0) - (a.totalScore || 0);
+          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+          if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0);
+          return (a.displayName || '').localeCompare(b.displayName || '');
         });
       }
 
@@ -386,7 +241,7 @@
       container.innerHTML = `
         <div class="lb-state-box">
           <div class="lb-spinner"></div>
-          <p class="lb-state-text">LOADING TOP CRINGERS...</p>
+          <p class="lb-state-text">LOADING CRINGE RANKINGS...</p>
         </div>
       `;
     }
@@ -417,19 +272,20 @@
       const players = this.cachedData[this.currentTab] || [];
       const currentPlayer = window.gameEngine?.getPlayerStats();
       const currentUserName = currentPlayer ? currentPlayer.name : 'Anonymous';
+      const playerHasBattles = (currentPlayer?.totalMatches || 0) > 0;
 
       // Filter by search query
       let filtered = players;
       if (this.searchQuery) {
-        filtered = players.filter(p => p.displayName.toLowerCase().includes(this.searchQuery));
+        filtered = players.filter(p => (p.displayName || '').toLowerCase().includes(this.searchQuery));
       }
 
       if (filtered.length === 0) {
         container.innerHTML = `
           <div class="lb-state-box empty-box">
             <span class="lb-state-icon">🏆</span>
-            <p class="lb-state-title">NO PLAYERS FOUND</p>
-            <p class="lb-state-desc">${this.searchQuery ? `No players match "${this.searchQuery}".` : 'Finish your first battle and claim the leaderboard!'}</p>
+            <p class="lb-state-title">NO RANKED PLAYERS YET</p>
+            <p class="lb-state-desc">${this.searchQuery ? `No players match "${this.searchQuery}".` : 'Complete your first battle and become CRINGE METER\'s #1 player.'}</p>
           </div>
         `;
         if (userRankContainer) userRankContainer.classList.add('hidden');
@@ -539,10 +395,10 @@
         container.appendChild(rowEl);
       });
 
-      // Sticky "YOUR RANK" Card rendering
+      // Sticky "YOUR RANK" Card rendering - only show if player has completed battles
       if (userRankContainer) {
-        const userRank = playerGlobalRank || this.computeCurrentPlayerRank(players, currentUserName);
-        if (currentPlayer) {
+        if (currentPlayer && playerHasBattles) {
+          const userRank = playerGlobalRank || this.computeCurrentPlayerRank(players, currentUserName);
           userRankContainer.classList.remove('hidden');
           userRankContainer.innerHTML = `
             <div class="user-rank-card-content">
@@ -582,14 +438,35 @@
       return idx !== -1 ? (idx + 1) : players.length + 1;
     }
 
-    renderHomeTopPerformers() {
+    async renderHomeTopPerformers() {
       const container = document.querySelector('.pc-mini-lb-list');
       if (!container) return;
 
-      const fallback = this.cachedData.global || DEV_FALLBACK_LEADERBOARD;
-      const top4 = fallback.slice(0, 4);
+      let players = this.cachedData.global;
+      if (!players) {
+        players = await this.fetchLeaderboardData('global');
+        this.cachedData.global = players;
+      }
+
+      const activePerformers = (players || []).filter(p => {
+        const battles = (p.wins || 0) + (p.losses || 0) || (p.totalBattles || 0);
+        return battles > 0;
+      });
 
       container.innerHTML = '';
+
+      if (activePerformers.length === 0) {
+        container.innerHTML = `
+          <div class="pc-mini-empty">
+            <span class="pc-mini-empty-icon">🏆</span>
+            <p class="pc-mini-empty-title">NO PERFORMERS YET</p>
+            <small class="pc-mini-empty-sub">Complete a battle to claim #1</small>
+          </div>
+        `;
+        return;
+      }
+
+      const top4 = activePerformers.slice(0, 4);
       top4.forEach((p, idx) => {
         const rank = idx + 1;
         const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
