@@ -1,6 +1,7 @@
 /**
- * CRINGE METER — Authoritative Online Server
- * Express + Socket.IO Server for 1v1 Matchmaking, Game State Sync, LiveKit WebRTC Token Issuance, and Safety Reporting.
+ * CRINGE METER — Authoritative Online Server (Supabase PostgreSQL Integrated)
+ * Express + Socket.IO Server for 1v1 Matchmaking, Game State Sync, LiveKit WebRTC Token Issuance,
+ * Real-time Leaderboards, and Supabase Cloud Storage.
  */
 
 require('dotenv').config();
@@ -8,14 +9,22 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 
 const matchmaking = require('./matchmaking');
 const gameRooms = require('./gameRooms');
 const { generateLiveKitToken } = require('./livekit');
-const safetyManager = require('./reports');
-const leaderboardStore = require('./leaderboardStore');
 
-const path = require('path');
+// Supabase PostgreSQL Cloud Services
+const { isConfigured: isDbConfigured, testConnection: testDbConnection } = require('./services/supabase');
+const userService = require('./services/userService');
+const matchService = require('./services/matchService');
+const leaderboardService = require('./services/leaderboardService');
+const subscriptionService = require('./services/subscriptionService');
+const subscriberService = require('./services/subscriberService');
+const reportService = require('./services/reportService');
+const blockService = require('./services/blockService');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -23,64 +32,115 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..')));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// ====================================================================
+// 1. HEALTH & SYSTEM CHECK ENDPOINTS
+// ====================================================================
+app.get('/api/health', async (req, res) => {
+  const dbStatus = await testDbConnection();
   res.json({
     status: 'ONLINE',
     service: 'CRINGE METER Server',
+    database: dbStatus.status,
+    databaseMessage: dbStatus.message,
     queueLength: matchmaking.getQueueLength(),
     activeRooms: gameRooms.rooms.size
   });
 });
 
-// Reports endpoint
-app.post('/api/reports', (req, res) => {
-  const report = safetyManager.addReport(req.body);
-  res.json({ success: true, report });
+// ====================================================================
+// 2. USER & PROFILE ENDPOINTS
+// ====================================================================
+app.get('/api/users/me', async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ success: false, message: 'Missing userId' });
+  const userData = await userService.getOrCreateUser(userId);
+  res.json({ success: true, ...userData });
 });
 
-// Subscription status endpoint
-app.get('/api/subscription/status/:userId', (req, res) => {
+app.post('/api/users/sync', async (req, res) => {
+  const { userId, profile } = req.body;
+  if (!userId) return res.status(400).json({ success: false, message: 'Missing userId' });
+  const updated = await userService.updateProfile(userId, profile || {});
+  res.json({ success: true, user: updated });
+});
+
+// ====================================================================
+// 3. VIP SUBSCRIPTION STATUS ENDPOINTS
+// ====================================================================
+app.get('/api/subscription/status/:userId', async (req, res) => {
   const userId = req.params.userId;
-  res.json({
-    userId,
-    planId: 'cringe_vip_monthly_599',
-    priceUsd: 5.99,
-    isVip: false,
-    vipStatus: 'FREE',
-    vipExpiresAt: null
-  });
+  const status = await subscriptionService.getSubscriptionStatus(userId);
+  res.json(status);
 });
 
-// Leaderboard endpoints
-app.get('/api/leaderboard', (req, res) => {
+// ====================================================================
+// 4. SUPABASE POSTGRESQL LEADERBOARD ENDPOINTS
+// ====================================================================
+app.get('/api/leaderboard', async (req, res) => {
   const type = req.query.type || 'global';
   const limit = parseInt(req.query.limit, 10) || 50;
   const search = req.query.search || '';
-  const result = leaderboardStore.getLeaderboard(type, limit, search);
+  const result = await leaderboardService.getLeaderboard(type, limit, search);
   res.json({ success: true, ...result });
 });
 
-app.get('/api/leaderboard/me', (req, res) => {
+app.get('/api/leaderboard/me', async (req, res) => {
   const userId = req.query.userId;
   if (!userId) return res.status(400).json({ success: false, message: 'Missing userId' });
-  const result = leaderboardStore.getPlayerRank(userId);
+  const result = await leaderboardService.getPlayerRank(userId);
   res.json({ success: true, ...result });
 });
 
-app.post('/api/leaderboard/record-match', (req, res) => {
-  const { winner, loser } = req.body;
-  leaderboardStore.recordMatchResult(winner, loser);
+// ====================================================================
+// 5. MATCH OUTCOME RECORDING ENDPOINT
+// ====================================================================
+app.post(['/api/leaderboard/record-match', '/api/matches/complete'], async (req, res) => {
+  const { sessionId, winner, loser, mode, winnerScore, loserScore } = req.body;
+  const matchSessionId = sessionId || `match_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const result = await matchService.recordMatchResult(
+    matchSessionId,
+    winner,
+    loser,
+    mode || 'dont_laugh',
+    winnerScore || 150,
+    loserScore || 40
+  );
   if (io) io.emit('leaderboard_updated', { type: 'match_finished' });
-  res.json({ success: true });
+  res.json(result);
 });
 
-app.post('/api/leaderboard/sync-player', (req, res) => {
-  const player = leaderboardStore.upsertPlayer(req.body);
-  if (io) io.emit('leaderboard_updated', { type: 'player_synced' });
-  res.json({ success: true, player });
+// ====================================================================
+// 6. EMAIL MARKETING SUBSCRIBERS ENDPOINTS
+// ====================================================================
+app.post('/api/subscribers', async (req, res) => {
+  const { email, displayName, userId, source } = req.body;
+  const result = await subscriberService.addSubscriber(email, displayName, userId, source);
+  res.json(result);
 });
 
+app.get('/api/subscribers/unsubscribe', async (req, res) => {
+  const token = req.query.token;
+  const result = await subscriberService.unsubscribe(token);
+  res.json(result);
+});
+
+// ====================================================================
+// 7. SAFETY REPORTS & BLOCKS ENDPOINTS
+// ====================================================================
+app.post('/api/reports', async (req, res) => {
+  const result = await reportService.addReport(req.body);
+  res.json(result);
+});
+
+app.post('/api/blocks', async (req, res) => {
+  const { blockerId, blockedId } = req.body;
+  const result = await blockService.blockUser(blockerId, blockedId);
+  res.json(result);
+});
+
+// ====================================================================
+// 8. SOCKET.IO MULTIPLAYER & REAL-TIME EVENT HANDLING
+// ====================================================================
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -94,13 +154,9 @@ io.on('connection', (socket) => {
 
   // 1. FIND MATCH REQUEST
   socket.on('find_match', (playerData) => {
-    console.log(`[SOCKET] find_match from ${socket.id} (${playerData.displayName})`);
-    
-    // Add to matchmaking queue
+    console.log(`[SOCKET] find_match from ${socket.id} (${playerData?.displayName})`);
     matchmaking.addToQueue(playerData, socket.id);
     socket.emit('matchmaking_status', { status: 'SEARCHING' });
-
-    // Attempt to pair
     attemptMatchmaking();
   });
 
@@ -129,8 +185,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 4. PLAYER BROKE / LAUGHED
-  socket.on('player_laughed', (data) => {
+  // 4. PLAYER BROKE / LAUGHED (Record verified result to Supabase)
+  socket.on('player_laughed', async (data) => {
     const room = gameRooms.getRoomBySocketId(socket.id);
     if (room) {
       const isPerformer = (socket.id === room.performerSocketId);
@@ -139,7 +195,8 @@ io.on('connection', (socket) => {
       const winnerObj = (winnerId === room.playerA.userId) ? room.playerA : room.playerB;
       const loserObj = (loserId === room.playerA.userId) ? room.playerA : room.playerB;
 
-      leaderboardStore.recordMatchResult(winnerObj, loserObj);
+      // Authoritatively persist match to Supabase
+      await matchService.recordMatchResult(room.sessionId, winnerObj, loserObj, 'dont_laugh', 150, 40);
       io.emit('leaderboard_updated', { type: 'round_finished' });
 
       const resultPayload = {
@@ -157,8 +214,6 @@ io.on('connection', (socket) => {
   // 5. NEXT MATCH (SKIP STRANGER)
   socket.on('next_match', (playerData) => {
     console.log(`[SOCKET] next_match pressed by ${socket.id}`);
-    
-    // Clean up current room if in one
     const leftInfo = gameRooms.handlePlayerLeave(socket.id);
     if (leftInfo && leftInfo.otherPlayer) {
       io.to(leftInfo.otherPlayer.socketId).emit('stranger_disconnected', {
@@ -166,10 +221,8 @@ io.on('connection', (socket) => {
       });
     }
 
-    // Immediately re-queue the player
     matchmaking.addToQueue(playerData, socket.id);
     socket.emit('matchmaking_status', { status: 'SEARCHING' });
-
     attemptMatchmaking();
   });
 
@@ -177,33 +230,30 @@ io.on('connection', (socket) => {
   socket.on('leave_match', () => {
     console.log(`[SOCKET] leave_match from ${socket.id}`);
     matchmaking.removeFromQueue(socket.id);
-
     const leftInfo = gameRooms.handlePlayerLeave(socket.id);
     if (leftInfo && leftInfo.otherPlayer) {
       io.to(leftInfo.otherPlayer.socketId).emit('stranger_disconnected', {
         reason: 'STRANGER_LEFT'
       });
     }
-
     socket.emit('matchmaking_status', { status: 'IDLE' });
   });
 
-  // 7. REPORT USER
-  socket.on('report_user', (reportData) => {
-    safetyManager.addReport({
+  // 7. REPORT USER (Persists to Supabase)
+  socket.on('report_user', async (reportData) => {
+    await reportService.addReport({
       ...reportData,
-      reporterSocketId: socket.id
+      reporterInternalId: reportData?.reporterUserId,
+      reportedInternalId: reportData?.targetUserId
     });
     socket.emit('report_acknowledged', { success: true });
   });
 
-  // 8. BLOCK USER
-  socket.on('block_user', (data) => {
+  // 8. BLOCK USER (Persists to Supabase)
+  socket.on('block_user', async (data) => {
     if (data && data.targetUserId && data.userId) {
-      safetyManager.blockUser(data.userId, data.targetUserId);
+      await blockService.blockUser(data.userId, data.targetUserId);
     }
-    
-    // Trigger NEXT logic
     socket.emit('block_acknowledged', { success: true });
   });
 
@@ -211,7 +261,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`[SOCKET] Client disconnected: ${socket.id}`);
     matchmaking.removeFromQueue(socket.id);
-
     const leftInfo = gameRooms.handlePlayerLeave(socket.id);
     if (leftInfo && leftInfo.otherPlayer) {
       io.to(leftInfo.otherPlayer.socketId).emit('stranger_disconnected', {
@@ -221,45 +270,72 @@ io.on('connection', (socket) => {
   });
 });
 
-// Matchmaker runner
+// ====================================================================
+// 9. MATCHMAKING PAIRING LOGIC & LIVEKIT TOKEN ISSUANCE
+// ====================================================================
 async function attemptMatchmaking() {
-  const match = matchmaking.findPair();
-  if (match) {
-    const { playerA, playerB } = match;
-    const room = gameRooms.createRoom(playerA, playerB);
+  const match = matchmaking.findMatch();
+  if (!match) return;
 
-    // Generate LiveKit tokens for both players (async JWT)
-    const tokenA = await generateLiveKitToken(room.roomName, playerA.userId, playerA.displayName);
-    const tokenB = await generateLiveKitToken(room.roomName, playerB.userId, playerB.displayName);
+  const { playerA, playerB } = match;
+  console.log(`[MATCHMAKING] Paired ${playerA.displayName} (${playerA.socketId}) with ${playerB.displayName} (${playerB.socketId})`);
 
-    const matchPayloadA = {
+  const room = gameRooms.createRoom(playerA, playerB);
+  const livekitRoomName = `cringe_room_${room.sessionId}`;
+
+  try {
+    const [tokenA, tokenB] = await Promise.all([
+      generateLiveKitToken(livekitRoomName, playerA.userId, playerA.displayName),
+      generateLiveKitToken(livekitRoomName, playerB.userId, playerB.displayName)
+    ]);
+
+    const livekitUrl = process.env.LIVEKIT_URL || 'wss://cringe-meter-gbi9jmfs.livekit.cloud';
+
+    io.to(playerA.socketId).emit('match_found', {
       sessionId: room.sessionId,
-      roomName: room.roomName,
-      opponent: playerB,
-      role: (playerA.userId === room.performerId) ? 'PERFORMER' : 'DEFENDER',
+      role: 'PERFORMER',
+      opponent: {
+        userId: playerB.userId,
+        displayName: playerB.displayName,
+        avatar: playerB.avatar,
+        level: playerB.level || 1,
+        title: playerB.title || 'CRINGER'
+      },
       cringePrompt: room.currentPrompt,
-      livekit: tokenA
-    };
+      livekit: {
+        url: livekitUrl,
+        roomName: livekitRoomName,
+        token: tokenA
+      }
+    });
 
-    const matchPayloadB = {
+    io.to(playerB.socketId).emit('match_found', {
       sessionId: room.sessionId,
-      roomName: room.roomName,
-      opponent: playerA,
-      role: (playerB.userId === room.performerId) ? 'PERFORMER' : 'DEFENDER',
+      role: 'DEFENDER',
+      opponent: {
+        userId: playerA.userId,
+        displayName: playerA.displayName,
+        avatar: playerA.avatar,
+        level: playerA.level || 1,
+        title: playerA.title || 'CRINGER'
+      },
       cringePrompt: room.currentPrompt,
-      livekit: tokenB
-    };
+      livekit: {
+        url: livekitUrl,
+        roomName: livekitRoomName,
+        token: tokenB
+      }
+    });
 
-    io.to(playerA.socketId).emit('match_found', matchPayloadA);
-    io.to(playerB.socketId).emit('match_found', matchPayloadB);
-
-    console.log(`[MATCHMAKING] Emitted match_found with LiveKit tokens to ${playerA.displayName} and ${playerB.displayName}`);
+    console.log(`[MATCHMAKING] Sent match_found & LiveKit credentials to room ${room.sessionId}`);
+  } catch (err) {
+    console.error("[MATCHMAKING] LiveKit token generation error:", err);
   }
 }
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`==================================================`);
+  console.log("==================================================");
   console.log(`⚡ CRINGE METER Server running on http://localhost:${PORT}`);
-  console.log(`==================================================`);
+  console.log("==================================================");
 });

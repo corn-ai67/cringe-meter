@@ -976,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   if (btnSubmitAuth) {
-    btnSubmitAuth.addEventListener('click', () => {
+    btnSubmitAuth.addEventListener('click', async () => {
       const username = authUsernameInput ? authUsernameInput.value.trim() : '';
       const email = authEmailInput ? authEmailInput.value.trim() : '';
       if (username || email) {
@@ -987,6 +987,42 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         localStorage.setItem('cringe_meter_account', JSON.stringify(accData));
         updateAccountUI();
+
+        // Sync to Supabase Cloud Database via Node.js backend
+        try {
+          const internalUserId = window.onlineState?.userId || engine?.player?.userId || `cm_${Date.now()}`;
+          // 1. Sync User Profile
+          fetch('/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: internalUserId,
+              profile: {
+                displayName: accData.username,
+                email: accData.email,
+                avatar: engine?.player?.avatar || '🤡',
+                title: engine?.player?.title || 'ABSOLUTELY SHAMELESS'
+              }
+            })
+          }).catch(() => {});
+
+          // 2. If valid email provided, register into email_subscribers in Supabase
+          if (email && email.includes('@')) {
+            fetch('/api/subscribers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: email,
+                displayName: accData.username,
+                userId: internalUserId,
+                source: 'auth_modal'
+              })
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.warn("[AUTH] Server sync error:", e);
+        }
+
         if (authModal) authModal.classList.add('hidden');
         sound.playClick();
       } else {
