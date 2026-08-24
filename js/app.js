@@ -199,6 +199,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cardRank.textContent = stats.rank || "Unranked";
     cardLevel.textContent = `LVL ${stats.level || 1}`;
 
+    const cardXpProgress = document.getElementById('cardXpProgress');
+    if (cardXpProgress) {
+      const currentLevelXp = stats.currentLevelXp !== undefined ? stats.currentLevelXp : (stats.xp || 0);
+      const xpForNext = stats.xpForNextLevel || 1000;
+      cardXpProgress.textContent = `${currentLevelXp.toLocaleString()} / ${xpForNext.toLocaleString()} XP`;
+    }
+
     const profileNameEl = document.getElementById('profileName');
     if (profileNameEl) profileNameEl.textContent = stats.name || "Anonymous";
 

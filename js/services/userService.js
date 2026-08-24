@@ -143,6 +143,14 @@ class UserService {
     const losses = userData.losses || 0;
     const totalBattles = userData.totalBattles !== undefined ? userData.totalBattles : (wins + losses);
     const winRate = totalBattles > 0 ? Math.round((wins / totalBattles) * 1000) / 10 : 0;
+    const totalXp = userData.xp || 0;
+
+    const prog = window.progressionService ? window.progressionService.getPlayerProgress(totalXp) : {
+      level: userData.level || 1,
+      currentLevelXp: totalXp,
+      xpForNextLevel: 1000,
+      rankTitle: userData.rankTitle || "Unranked"
+    };
 
     this.currentUser = {
       isSignedIn: true,
@@ -152,20 +160,22 @@ class UserService {
       displayName: userData.displayName || "Anonymous",
       avatar: userData.avatar || userData.avatarEmoji || "🤡",
       avatarPhoto: userData.avatarPhoto || userData.avatarUrl || null,
-      rankTitle: userData.rankTitle || "Unranked",
+      rankTitle: prog.rankTitle || userData.rankTitle || "Unranked",
       title: userData.title || userData.customTitle || "GUEST FIGHTER",
       theme: userData.theme || "magenta",
       taunt: userData.taunt || userData.victoryTaunt || "YOU BROKE THEM 💀",
       coins: userData.coins || 0,
-      xp: userData.xp || 0,
-      level: userData.level || 1,
+      xp: totalXp,
+      level: prog.level,
+      currentLevelXp: prog.currentLevelXp,
+      xpForNextLevel: prog.xpForNextLevel,
       wins: wins,
       losses: losses,
       totalBattles: totalBattles,
       winRate: winRate,
       currentStreak: userData.currentStreak || 0,
       bestStreak: userData.bestStreak || 0,
-      totalScore: userData.totalScore || (userData.xp || 0),
+      totalScore: userData.totalScore || totalXp,
       isVip: !!userData.isVip
     };
 

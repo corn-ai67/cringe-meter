@@ -508,6 +508,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
+        // Hydrate latest Supabase stats into currentUser
+        if (window.userService && playerStats.userId) {
+          await window.userService.fetchUserFromCloud(playerStats.userId, window.userService.getCurrentUser().email);
+        }
       } catch (e) {
         console.warn("[LEADERBOARD] Could not record match outcome on server:", e);
       }

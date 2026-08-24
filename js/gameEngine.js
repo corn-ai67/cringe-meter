@@ -70,11 +70,14 @@ class GameEngine {
     this.player.coins = user.coins || 0;
     this.player.xp = user.xp || 0;
     this.player.level = user.level || 1;
+    this.player.currentLevelXp = user.currentLevelXp !== undefined ? user.currentLevelXp : (user.xp || 0);
+    this.player.xpForNextLevel = user.xpForNextLevel || 1000;
     this.player.wins = user.wins || 0;
     this.player.losses = user.losses || 0;
     this.player.totalMatches = user.totalBattles !== undefined ? user.totalBattles : 0;
     this.player.winRate = user.winRate || 0;
     this.player.streak = user.currentStreak || 0;
+    this.player.currentStreak = user.currentStreak || 0;
     this.player.bestStreak = user.bestStreak || 0;
     this.player.peopleBroken = user.wins || 0;
     this.player.isVip = !!user.isVip;
