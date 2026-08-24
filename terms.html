@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms & Safety Rules — CRINGE METER</title>
+  <meta name="description" content="Official Terms of Use, Community Guidelines, and Safety Rules for CRINGE METER live 1v1 video battles." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0c14;
+      --bg-card: #121522;
+      --bg-card-border: #1f2338;
+      --accent-magenta: #FF0055;
+      --accent-magenta-glow: rgba(255, 0, 85, 0.35);
+      --accent-cyan: #00F0FF;
+      --accent-cyan-glow: rgba(0, 240, 255, 0.25);
+      --accent-gold: #FFB700;
+      --text-main: #FFFFFF;
+      --text-muted: #9499B3;
+      --text-dim: #676C8A;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Outfit', system-ui, -apple-system, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(255, 0, 85, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.06) 0%, transparent 45%);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 0 20px 80px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .terms-wrapper {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    /* Top Navigation Bar */
+    .terms-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 36px 0;
+      border-bottom: 1px solid var(--bg-card-border);
+      margin-bottom: 36px;
+    }
+
+    .terms-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #FFF;
+    }
+
+    .brand-emoji {
+      font-size: 1.8rem;
+    }
+
+    .brand-text {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .brand-text span {
+      color: var(--accent-magenta);
+    }
+
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 999px;
+      color: #FFF;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back-home:hover {
+      background: var(--accent-magenta);
+      border-color: var(--accent-magenta);
+      box-shadow: 0 0 15px var(--accent-magenta-glow);
+      transform: translateX(-2px);
+    }
+
+    /* Header Banner */
+    .terms-header {
+      margin-bottom: 36px;
+    }
+
+    .terms-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .badge-pill {
+      font-family: var(--font-heading);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(255, 0, 85, 0.15);
+      border: 1px solid var(--accent-magenta);
+      color: var(--accent-magenta);
+    }
+
+    .badge-ver {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .terms-header h1 {
+      font-family: var(--font-heading);
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #FFFFFF 60%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .terms-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 780px;
+    }
+
+    /* Table of Contents Card */
+    .toc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .toc-title {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--accent-cyan);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px 24px;
+      list-style: none;
+    }
+
+    .toc-grid a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: color 0.2s ease, transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .toc-grid a:hover {
+      color: var(--accent-magenta);
+      transform: translateX(4px);
+    }
+
+    /* Policy Content Sections */
+    .terms-section {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .section-num-tag {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: var(--accent-magenta);
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .terms-section h2 {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .terms-section p {
+      color: #D3D7E8;
+      margin-bottom: 14px;
+    }
+
+    .terms-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    .terms-section ul {
+      list-style: none;
+      margin: 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .terms-section li {
+      position: relative;
+      padding-left: 24px;
+      color: #D3D7E8;
+    }
+
+    .terms-section li::before {
+      content: "•";
+      position: absolute;
+      left: 6px;
+      top: 0;
+      color: var(--accent-magenta);
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    /* Highlight & Notice Callouts */
+    .notice-box {
+      background: rgba(0, 240, 255, 0.05);
+      border-left: 4px solid var(--accent-cyan);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin: 18px 0;
+    }
+
+    .notice-box.warning {
+      background: rgba(255, 0, 85, 0.08);
+      border-left-color: var(--accent-magenta);
+    }
+
+    .notice-box.gold {
+      background: rgba(255, 183, 0, 0.08);
+      border-left-color: var(--accent-gold);
+    }
+
+    .notice-title {
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #FFF;
+      margin-bottom: 4px;
+    }
+
+    .notice-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    .terms-footer {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid var(--bg-card-border);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .terms-footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    .terms-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 0 14px 60px 14px;
+      }
+      .terms-section {
+        padding: 24px 20px;
+      }
+      .terms-header h1 {
+        font-size: 1.85rem;
+      }
+      .toc-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="terms-wrapper">
+    <!-- Top Nav -->
+    <nav class="terms-nav">
+      <a href="/" class="terms-brand">
+        <span class="brand-emoji">🤡</span>
+        <span class="brand-text">CRINGE <span>METER</span></span>
+      </a>
+      <a href="/" class="btn-back-home">
+        <span>←</span> BACK TO CRINGE METER
+      </a>
+    </nav>
+
+    <!-- Header Banner -->
+    <header class="terms-header">
+      <div class="terms-badge-row">
+        <span class="badge-pill">LEGAL &amp; SAFETY POLICY</span>
+        <span class="badge-ver">Version 1.0 • Last Updated: August 24, 2026</span>
+      </div>
+      <h1>Terms of Use &amp; Community Rules</h1>
+      <p class="terms-subtitle">
+        Please read these terms carefully before entering 1v1 random video battles. By accessing or using CRINGE METER, you agree to comply with all safety, privacy, and community rules.
+      </p>
+    </header>
+
+    <!-- Table of Contents -->
+    <section class="toc-card">
+      <div class="toc-title">📋 TABLE OF CONTENTS</div>
+      <ul class="toc-grid">
+        <li><a href="#acceptance">1. Acceptance of Terms</a></li>
+        <li><a href="#eligibility">2. Eligibility &amp; Age Requirement</a></li>
+        <li><a href="#community">3. Community Code of Conduct</a></li>
+        <li><a href="#prohibited-content">4. Prohibited Video Content</a></li>
+        <li><a href="#recording-rules">5. Recording &amp; Screenshots</a></li>
+        <li><a href="#camera-moderation">6. Camera &amp; Moderation Disclosure</a></li>
+        <li><a href="#privacy-data">7. Privacy &amp; Data Handling</a></li>
+        <li><a href="#reporting-blocking">8. Reporting &amp; Blocking Tools</a></li>
+        <li><a href="#enforcement">9. Enforcement &amp; Permanent Bans</a></li>
+        <li><a href="#user-content">10. User-Generated Content &amp; Studio</a></li>
+        <li><a href="#vip-virtual-items">11. CRINGE VIP &amp; Virtual Coins</a></li>
+        <li><a href="#service-infra">12. Service Availability &amp; WebRTC</a></li>
+        <li><a href="#disclaimers">13. Disclaimers &amp; Limitations</a></li>
+        <li><a href="#changes">14. Changes to These Terms</a></li>
+        <li><a href="#contact">15. Contact &amp; Support</a></li>
+      </ul>
+    </section>
+
+    <!-- 1. ACCEPTANCE -->
+    <section class="terms-section" id="acceptance">
+      <span class="section-num-tag">SECTION 01</span>
+      <h2>1. Acceptance of Terms</h2>
+      <p>
+        These Terms of Use ("Terms") constitute a legally binding agreement between you ("User", "Player") and CRINGE METER ("Platform", "We", "Us").
+      </p>
+      <p>
+        By connecting your camera, entering matchmaking, creating an account, or participating in Don't Laugh arena battles, you acknowledge that you have read, understood, and agreed to be bound by these Terms and our safety guidelines. If you do not agree to these Terms, you must discontinue use of the platform immediately.
+      </p>
+    </section>
+
+    <!-- 2. ELIGIBILITY -->
+    <section class="terms-section" id="eligibility">
+      <span class="section-num-tag">SECTION 02</span>
+      <h2>2. Eligibility &amp; Age Requirement (18+ Mandatory)</h2>
+      <div class="notice-box warning">
+        <div class="notice-title">⚠️ Strictly 18 Years of Age or Older</div>
+        <div class="notice-desc">CRINGE METER is designed solely for adults. Anyone under the age of 18 is strictly prohibited from participating in video chat battles.</div>
+      </div>
+      <p>
+        To access and use CRINGE METER's live video matchmaking:
+      </p>
+      <ul>
+        <li>You must be at least <strong>18 years old</strong> (or the age of legal majority in your jurisdiction).</li>
+        <li>You must not falsely represent your age or date of birth during Quick Setup or account registration.</li>
+        <li>If we discover or have reason to believe that a user is under 18 years old, their account will be terminated and their connection permanently blacklisted.</li>
+      </ul>
+    </section>
+
+    <!-- 3. COMMUNITY RULES -->
+    <section class="terms-section" id="community">
+      <span class="section-num-tag">SECTION 03</span>
+      <h2>3. Community Code of Conduct</h2>
+      <p>
+        CRINGE METER is a competitive social game built for lighthearted fun, cringe humor, and facial endurance. We maintain zero tolerance for toxic or abusive behavior.
+      </p>
+      <p>When participating on the platform, you agree NOT to:</p>
+      <ul>
+        <li>Harass, intimidate, stalk, or threaten any other participant.</li>
+        <li>Dox, disclose, or solicit personal identity information (e.g. real names, physical addresses, phone numbers, social media profiles).</li>
+        <li>Promote hate speech, racial discrimination, bigotry, or targeted violence.</li>
+        <li>Impersonate public figures, administrators, or other players maliciously.</li>
+        <li>Spam matchmaking queues, exploit bugs, or use automated scripts/bots to disrupt gameplay.</li>
+        <li>Evade active bans, IP restrictions, or moderation enforcement actions.</li>
+      </ul>
+    </section>
+
+    <!-- 4. PROHIBITED CONTENT -->
+    <section class="terms-section" id="prohibited-content">
+      <span class="section-num-tag">SECTION 04</span>
+      <h2>4. Prohibited Video Content</h2>
+      <p>
+        Broadcasting any of the following material on camera is strictly prohibited and results in an immediate permanent ban:
+      </p>
+      <ul>
+        <li><strong>Nudity &amp; Sexual Acts:</strong> Any display of genitalia, buttocks, female breasts, sexual activity, or sexually explicit behavior.</li>
+        <li><strong>Child Exploitation:</strong> Any imagery, participation, or reference involving minors. Violations will be reported immediately to law enforcement authorities (NCMEC).</li>
+        <li><strong>Graphic Violence &amp; Self-Harm:</strong> Displays of blood, gore, physical assault, animal cruelty, or self-harm encouragement.</li>
+        <li><strong>Weapons &amp; Threats:</strong> Brandishing firearms, knives, or weapons intended to threaten, terrify, or coerce another player.</li>
+        <li><strong>Illegal Activity:</strong> Consuming illicit substances on camera, displaying illegal items, or promoting criminal acts.</li>
+      </ul>
+    </section>
+
+    <!-- 5. RECORDING -->
+    <section class="terms-section" id="recording-rules">
+      <span class="section-num-tag">SECTION 05</span>
+      <h2>5. Screenshot, Recording &amp; Rebroadcasting Prohibitions</h2>
+      <div class="notice-box">
+        <div class="notice-title">🔒 Player Privacy Protection</div>
+        <div class="notice-desc">All 1v1 video matches are intended to be ephemeral live encounters. Recording your opponent without mutual consent violates our platform terms.</div>
+      </div>
+      <p>
+        You expressly agree that you will not:
+      </p>
+      <ul>
+        <li>Record, screen-capture, or screenshot another participant's camera or audio stream without their explicit, verifiable consent.</li>
+        <li>Rebroadcast, stream, or upload video of your opponent to TikTok, YouTube, Twitch, Instagram, or any external platform without permission.</li>
+        <li>Publish or distribute screenshots or recordings to harass, humiliate, or dox a player.</li>
+      </ul>
+      <p style="font-size:0.85rem;color:var(--text-dim);">
+        <em>Note: While CRINGE METER prohibits unauthorized recording, we cannot technically prevent external screen recording software on an opponent's device. Always exercise personal discretion regarding what you reveal on camera.</em>
+      </p>
+    </section>
+
+    <!-- 6. CAMERA & MODERATION -->
+    <section class="terms-section" id="camera-moderation">
+      <span class="section-num-tag">SECTION 06</span>
+      <h2>6. Camera Analysis &amp; Moderation Disclosure</h2>
+      <p>
+        To maintain transparent and accurate disclosures regarding our technology stack:
+      </p>
+      <ul>
+        <li><strong>Client-Side Reaction Analysis:</strong> Facial smile, laugh, and blink detection is performed locally in your web browser via client-side face landmark analysis. Facial mesh coordinates are processed in temporary browser memory to calculate game scores and are not transmitted to a storage server.</li>
+        <li><strong>Real-Time Video Transport:</strong> Live audio and video streams are routed in real-time through LiveKit WebRTC infrastructure for high-speed low-latency peer connectivity.</li>
+        <li><strong>No Automatic Video Archiving:</strong> CRINGE METER does not record, archive, or maintain 30-day recordings of standard video calls on its servers.</li>
+        <li><strong>Safety Incident Moderation:</strong> If a user submits a Safety Report (via the in-match Report tool), the server records the reporting user ID, target user ID, match session identifier, timestamp, and reported reason for human and administrative review.</li>
+      </ul>
+    </section>
+
+    <!-- 7. PRIVACY -->
+    <section class="terms-section" id="privacy-data">
+      <span class="section-num-tag">SECTION 07</span>
+      <h2>7. Privacy &amp; Data Handling Summary</h2>
+      <p>
+        We store only the minimum necessary data to support your gameplay experience:
+      </p>
+      <ul>
+        <li><strong>User Profile:</strong> Display name, avatar emoji, custom title, theme preference, and internal account identifier (stored in Supabase PostgreSQL).</li>
+        <li><strong>Competitive Statistics:</strong> Wins, losses, total battles, current win streak, best streak, total score, and weekly leaderboard scores.</li>
+        <li><strong>Match Outcomes:</strong> Completed match session records, winner ID, loser ID, game mode, and completion timestamps.</li>
+        <li><strong>Email &amp; Marketing:</strong> If you provide your email upon sign-in or newsletter opt-in, it is stored in our database. Promotional emails require voluntary consent and include a one-click unsubscribe mechanism.</li>
+        <li><strong>Passwords:</strong> We do not store plaintext passwords. Authentication security is managed through isolated tokenized sessions.</li>
+      </ul>
+    </section>
+
+    <!-- 8. REPORTING & BLOCKING -->
+    <section class="terms-section" id="reporting-blocking">
+      <span class="section-num-tag">SECTION 08</span>
+      <h2>8. Reporting &amp; User Blocking Tools</h2>
+      <p>
+        CRINGE METER provides built-in safety controls in every active 1v1 battle:
+      </p>
+      <ul>
+        <li><strong>The "NEXT" Button:</strong> Allows you to instantly disconnect from a stranger and immediately enter matchmaking with a new opponent.</li>
+        <li><strong>Report Player:</strong> Allows you to report an opponent for Sexual Content, Harassment, Underage Safety Concerns, Spam, or Other Violations.</li>
+        <li><strong>Block Player:</strong> Prevents the matchmaking engine from ever pairing you with the blocked user ID again.</li>
+        <li><strong>False Reporting:</strong> Intentionally abusing the reporting system with fabricated reports is a violation of these Terms.</li>
+      </ul>
+    </section>
+
+    <!-- 9. ENFORCEMENT & BANS -->
+    <section class="terms-section" id="enforcement">
+      <span class="section-num-tag">SECTION 09</span>
+      <h2>9. Enforcement, Account Suspension &amp; Permanent Bans</h2>
+      <p>
+        Failure to abide by these Terms may result in one or more of the following administrative actions:
+      </p>
+      <ul>
+        <li><strong>Formal Warning:</strong> Issued for minor or inadvertent rule infringements.</li>
+        <li><strong>Matchmaking Cooldown:</strong> Temporary restriction from queuing for random video battles.</li>
+        <li><strong>Leaderboard Disqualification:</strong> Resetting scores and removing players found using cheats, automated laughter spoofers, or exploitative match win-trading.</li>
+        <li><strong>Permanent Account &amp; Device Ban:</strong> Immediate termination of user account and blacklisting of network identifiers for severe safety violations (nudity, harassment, minor safety, illegal conduct).</li>
+      </ul>
+    </section>
+
+    <!-- 10. UGC & STUDIO -->
+    <section class="terms-section" id="user-content">
+      <span class="section-num-tag">SECTION 10</span>
+      <h2>10. User-Generated Content &amp; Cringe Studio Rules</h2>
+      <p>
+        CRINGE METER allows players to customize their player names, titles, victory taunts, and custom cringe prompts through Cringe Studio.
+      </p>
+      <p>
+        You are solely responsible for any text, photo, or prompt you create. User-generated content must not contain hateful slurs, sexually explicit text, copyright infringement, or defamation. CRINGE METER reserves the right to delete or reset non-compliant custom profile elements.
+      </p>
+    </section>
+
+    <!-- 11. VIP & COINS -->
+    <section class="terms-section" id="vip-virtual-items">
+      <span class="section-num-tag">SECTION 11</span>
+      <h2>11. CRINGE VIP Subscriptions &amp; Virtual Coins</h2>
+      <div class="notice-box gold">
+        <div class="notice-title">👑 Virtual Game Items</div>
+        <div class="notice-desc">CRINGE METER Coins and VIP badges are virtual in-app items with no cash, cryptocurrency, or real-world monetary value.</div>
+      </div>
+      <ul>
+        <li><strong>Virtual Coins:</strong> Earned through gameplay victories and daily win streaks. Coins cannot be redeemed, sold, or transferred for real money.</li>
+        <li><strong>CRINGE VIP Membership:</strong> The optional VIP plan ($5.99 USD/month) grants 2× Coin earnings, full Cringe Studio access, exclusive glowing profile badge, and the VIP title.</li>
+        <li><strong>Subscription Management:</strong> Subscriptions renew automatically each billing cycle until cancelled. Cancellation terms adhere to applicable payment provider policies and consumer regulations.</li>
+      </ul>
+    </section>
+
+    <!-- 12. AVAILABILITY -->
+    <section class="terms-section" id="service-infra">
+      <span class="section-num-tag">SECTION 12</span>
+      <h2>12. Service Availability &amp; WebRTC Infrastructure</h2>
+      <p>
+        CRINGE METER relies on real-time internet protocols and third-party WebRTC infrastructure (such as LiveKit).
+      </p>
+      <p>
+        We strive for continuous availability, but do not guarantee uninterrupted or error-free service. Match connections may experience network latency, packet loss, or temporary downtime during maintenance windows or server upgrades.
+      </p>
+    </section>
+
+    <!-- 13. DISCLAIMERS -->
+    <section class="terms-section" id="disclaimers">
+      <span class="section-num-tag">SECTION 13</span>
+      <h2>13. Disclaimers &amp; Limitation of Liability</h2>
+      <p>
+        CRINGE METER IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED.
+      </p>
+      <p>
+        Because random video chat connects you with unvetted third-party strangers in real-time, you understand that encounters are unpredictable. You participate at your own risk and are responsible for exercising personal caution, using the NEXT button, and reporting offensive content.
+      </p>
+      <p>
+        To the maximum extent permitted by applicable law, CRINGE METER and its operators shall not be liable for any direct, indirect, incidental, or consequential damages resulting from your interactions with other users.
+      </p>
+    </section>
+
+    <!-- 14. CHANGES -->
+    <section class="terms-section" id="changes">
+      <span class="section-num-tag">SECTION 14</span>
+      <h2>14. Changes to These Terms</h2>
+      <p>
+        We may update or modify these Terms periodically to reflect new features, safety regulations, or legal requirements. When changes are published, the "Last Updated" date at the top of this page will be revised. Continued use of CRINGE METER following the posting of revised Terms constitutes your acceptance of the changes.
+      </p>
+    </section>
+
+    <!-- 15. CONTACT -->
+    <section class="terms-section" id="contact">
+      <span class="section-num-tag">SECTION 15</span>
+      <h2>15. Contact &amp; Support</h2>
+      <p>
+        If you have questions regarding these Terms, need assistance, or wish to submit a safety inquiry, you may contact our moderation and support team:
+      </p>
+      <div class="notice-box">
+        <div class="notice-title">📬 Official Support Channel</div>
+        <div class="notice-desc">
+          Email: <a href="mailto:support@cringemeter.io" style="color:var(--accent-cyan);font-weight:700;">support@cringemeter.io</a><br/>
+          Platform: <strong>CRINGE METER Safety &amp; Moderation Team</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="terms-footer">
+      <p>&copy; 2026 CRINGE METER. All rights reserved.</p>
+      <p style="margin-top:6px;">
+        <a href="/">← Return to Cringe Battles</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

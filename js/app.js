@@ -388,10 +388,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnAgreeStartRules) {
     btnAgreeStartRules.addEventListener('click', () => {
+      const allChecked = Array.from(document.querySelectorAll('.rule-chk')).every(chk => chk.checked);
+      if (!allChecked) {
+        alert("Please review and check all safety rules to confirm your agreement before entering Cringe Battles.");
+        return;
+      }
+
       const enteredName = quickSetupDisplayName ? quickSetupDisplayName.value.trim() : '';
       const finalName = enteredName || 'Anonymous';
       engine.updateProfile({ name: finalName });
       localStorage.setItem('cringe_rules_accepted', 'true');
+      localStorage.setItem('cringe_terms_version', '1.0');
+      localStorage.setItem('cringe_terms_accepted_at', new Date().toISOString());
+
+      // If signed in, sync terms acceptance with backend
+      try {
+        const user = window.userService ? window.userService.getCurrentUser() : null;
+        if (user && user.isSignedIn && user.internalUserId) {
+          fetch('/api/terms/accept', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.internalUserId,
+              termsVersion: '1.0'
+            })
+          }).catch(() => {});
+        }
+      } catch (e) {}
+
       if (quickSetupRulesModal) quickSetupRulesModal.classList.add('hidden');
       sound.playClick();
       startMatchmakingFlow();

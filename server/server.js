@@ -32,6 +32,31 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..')));
 
+// Dedicated Terms & Safety Rules Page Route
+app.get(['/terms', '/terms.html', '/safety', '/rules'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'terms.html'));
+});
+
+// Terms Configuration & Acceptance API
+app.get('/api/config/terms', (req, res) => {
+  res.json({
+    version: '1.0',
+    lastUpdated: '2026-08-24',
+    supportEmail: process.env.SUPPORT_EMAIL || 'support@cringemeter.io',
+    minAge: 18,
+    fullTermsUrl: '/terms'
+  });
+});
+
+app.post('/api/terms/accept', async (req, res) => {
+  const { userId, termsVersion } = req.body;
+  res.json({
+    success: true,
+    termsVersion: termsVersion || '1.0',
+    acceptedAt: new Date().toISOString()
+  });
+});
+
 // ====================================================================
 // 1. HEALTH & SYSTEM CHECK ENDPOINTS
 // ====================================================================
