@@ -15,6 +15,7 @@ class GameEngine {
   constructor() {
     this.player = {
       isSignedIn: false,
+      userId: null,
       isVip: false,
       vipPlan: null,
       vipExpiresAt: null,
@@ -36,7 +37,14 @@ class GameEngine {
       taunt: "YOU BROKE THEM 💀"
     };
 
-    this.loadPlayerData();
+    this.uiCallbacks = {};
+
+    if (window.userService) {
+      window.userService.onUserChange((user) => this.syncFromUser(user));
+      this.syncFromUser(window.userService.getCurrentUser());
+    } else {
+      this.loadPlayerData();
+    }
 
     this.activeMode = new window.DontLaughMode();
     this.activeMode.init(this);
@@ -44,82 +52,93 @@ class GameEngine {
     this.currentMatch = null;
     this.timerInterval = null;
     this.simulatedOpponentInterval = null;
-    this.uiCallbacks = {};
     this.roomCode = null;
     this.isRoomHost = false;
   }
 
+  syncFromUser(user) {
+    if (!user) return;
+    this.player.isSignedIn = !!user.isSignedIn;
+    this.player.userId = user.internalUserId;
+    this.player.name = user.displayName || "Anonymous";
+    this.player.avatar = user.avatar || "👤";
+    this.player.avatarPhoto = user.avatarPhoto || null;
+    this.player.rank = user.rankTitle || "Unranked";
+    this.player.title = user.title || "GUEST FIGHTER";
+    this.player.theme = user.theme || "magenta";
+    this.player.taunt = user.taunt || "YOU BROKE THEM 💀";
+    this.player.coins = user.coins || 0;
+    this.player.xp = user.xp || 0;
+    this.player.level = user.level || 1;
+    this.player.wins = user.wins || 0;
+    this.player.losses = user.losses || 0;
+    this.player.totalMatches = user.totalBattles !== undefined ? user.totalBattles : 0;
+    this.player.winRate = user.winRate || 0;
+    this.player.streak = user.currentStreak || 0;
+    this.player.bestStreak = user.bestStreak || 0;
+    this.player.peopleBroken = user.wins || 0;
+    this.player.isVip = !!user.isVip;
+
+    if (this.uiCallbacks.onStatsUpdated) {
+      this.uiCallbacks.onStatsUpdated(this.player);
+    }
+    if (this.uiCallbacks.onPlayerUpdated) {
+      this.uiCallbacks.onPlayerUpdated(this.player);
+    }
+  }
+
   loadPlayerData() {
+    if (window.userService) {
+      this.syncFromUser(window.userService.getCurrentUser());
+      return;
+    }
     try {
       const saved = localStorage.getItem('cringe_meter_player_data');
       if (saved) {
         const parsed = JSON.parse(saved);
         this.player = { ...this.player, ...parsed };
-        if (!this.player.isSignedIn && (!this.player.name || this.player.name === 'HyperCringe_99')) {
-          this.player.name = "Anonymous";
-          this.player.avatar = "👤";
-        }
-
-        // Subscription Title Fallback Safety Check
-        if (window.subscriptionService && !window.subscriptionService.hasVipAccess(this.player)) {
-          if (window.subscriptionService.isVipTitle(this.player.title)) {
-            this.player.title = this.player.isSignedIn ? "ABSOLUTELY SHAMELESS" : "GUEST FIGHTER";
-          }
-        }
-      } else {
-        // If not signed in by default
-        this.player.name = "Anonymous";
-        this.player.avatar = "👤";
-        this.player.isSignedIn = false;
-        this.player.isVip = false;
-        this.player.vipPlan = null;
-        this.player.vipExpiresAt = null;
       }
-    } catch (e) {
-      console.warn("Could not load player data:", e);
-    }
+    } catch (e) {}
   }
 
   signIn(name = "HyperCringe_99") {
-    this.player.isSignedIn = true;
-    this.player.name = name;
-    if (this.player.avatar === "👤") {
-      this.player.avatar = "🤡";
-    }
-    if (this.player.title === "GUEST FIGHTER") {
-      this.player.title = "ABSOLUTELY SHAMELESS";
-    }
-    this.savePlayerData();
-    if (this.uiCallbacks.onStatsUpdated) {
-      this.uiCallbacks.onStatsUpdated(this.player);
+    if (window.userService) {
+      window.userService.signIn({ username: name });
+    } else {
+      this.player.isSignedIn = true;
+      this.player.name = name;
+      this.savePlayerData();
+      if (this.uiCallbacks.onStatsUpdated) this.uiCallbacks.onStatsUpdated(this.player);
     }
   }
 
   signOut() {
-    this.player.isSignedIn = false;
-    this.player.name = "Anonymous";
-    this.player.avatar = "👤";
-    this.player.rank = "Unranked";
-    this.player.level = 1;
-    this.player.xp = 0;
-    this.player.coins = 0;
-    this.player.streak = 0;
-    this.player.bestStreak = 0;
-    this.player.totalMatches = 0;
-    this.player.peopleBroken = 0;
-    this.player.winRate = 0;
-    this.player.title = "GUEST FIGHTER";
-    this.savePlayerData();
-    if (this.uiCallbacks.onStatsUpdated) {
-      this.uiCallbacks.onStatsUpdated(this.player);
+    if (window.userService) {
+      window.userService.signOut();
+    } else {
+      this.player.isSignedIn = false;
+      this.player.name = "Anonymous";
+      this.player.avatar = "👤";
+      this.player.rank = "Unranked";
+      this.player.level = 1;
+      this.player.xp = 0;
+      this.player.coins = 0;
+      this.player.streak = 0;
+      this.player.bestStreak = 0;
+      this.player.totalMatches = 0;
+      this.player.peopleBroken = 0;
+      this.player.winRate = 0;
+      this.player.title = "GUEST FIGHTER";
+      this.savePlayerData();
+      if (this.uiCallbacks.onStatsUpdated) this.uiCallbacks.onStatsUpdated(this.player);
     }
   }
 
   savePlayerData() {
-    try {
-      localStorage.setItem('cringe_meter_player_data', JSON.stringify(this.player));
-    } catch (e) {
-      console.warn("Could not save player data:", e);
+    if (!this.player.isSignedIn) {
+      try {
+        localStorage.setItem('cringe_meter_player_data', JSON.stringify(this.player));
+      } catch (e) {}
     }
   }
 
@@ -134,42 +153,36 @@ class GameEngine {
   setAvatar(newAvatar) {
     this.player.avatar = newAvatar;
     this.player.avatarPhoto = null;
-    this.savePlayerData();
-    if (this.uiCallbacks.onPlayerUpdated) {
-      this.uiCallbacks.onPlayerUpdated(this.player);
+    if (window.userService) {
+      window.userService.updateProfile({ avatar: newAvatar, avatarPhoto: null });
+    } else {
+      this.savePlayerData();
+      if (this.uiCallbacks.onPlayerUpdated) this.uiCallbacks.onPlayerUpdated(this.player);
     }
   }
 
   setAvatarPhoto(photoBase64) {
     this.player.avatarPhoto = photoBase64;
-    this.savePlayerData();
-    if (this.uiCallbacks.onPlayerUpdated) {
-      this.uiCallbacks.onPlayerUpdated(this.player);
+    if (window.userService) {
+      window.userService.updateProfile({ avatarPhoto: photoBase64 });
+    } else {
+      this.savePlayerData();
+      if (this.uiCallbacks.onPlayerUpdated) this.uiCallbacks.onPlayerUpdated(this.player);
     }
   }
 
   updateProfile(newData) {
-    if (newData.name !== undefined) this.player.name = newData.name.trim() || this.player.name;
-    if (newData.title !== undefined) {
-      const newTitle = newData.title.trim();
-      if (window.subscriptionService && window.subscriptionService.isVipTitle(newTitle)) {
-        if (window.subscriptionService.hasVipAccess(this.player)) {
-          this.player.title = newTitle;
-        } else {
-          console.warn("VIP exclusive title requires active CRINGE VIP subscription.");
-        }
-      } else {
-        this.player.title = newTitle || this.player.title;
-      }
-    }
-    if (newData.avatar !== undefined) this.player.avatar = newData.avatar;
-    if (newData.avatarPhoto !== undefined) this.player.avatarPhoto = newData.avatarPhoto;
-    if (newData.theme !== undefined) this.player.theme = newData.theme;
-    if (newData.taunt !== undefined) this.player.taunt = newData.taunt;
-
-    this.savePlayerData();
-    if (this.uiCallbacks.onPlayerUpdated) {
-      this.uiCallbacks.onPlayerUpdated(this.player);
+    if (window.userService) {
+      window.userService.updateProfile(newData);
+    } else {
+      if (newData.name !== undefined) this.player.name = newData.name.trim() || this.player.name;
+      if (newData.title !== undefined) this.player.title = newData.title.trim() || this.player.title;
+      if (newData.avatar !== undefined) this.player.avatar = newData.avatar;
+      if (newData.avatarPhoto !== undefined) this.player.avatarPhoto = newData.avatarPhoto;
+      if (newData.theme !== undefined) this.player.theme = newData.theme;
+      if (newData.taunt !== undefined) this.player.taunt = newData.taunt;
+      this.savePlayerData();
+      if (this.uiCallbacks.onPlayerUpdated) this.uiCallbacks.onPlayerUpdated(this.player);
     }
   }
 

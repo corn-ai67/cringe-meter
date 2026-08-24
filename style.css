@@ -1887,10 +1887,54 @@ body.theme-gold {
   margin-top: 2px;
 }
 
-.auth-modal-body {
+.auth-modal-card {
+  max-width: 420px;
+}
+
+.current-account-box {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 4px;
+}
+.account-active-badge {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #00FF66;
+  letter-spacing: 1px;
+}
+.current-account-name {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #FFF;
+  margin: 2px 0 0 0;
+}
+.current-account-email {
+  font-size: 0.8rem;
+  color: var(--text-dim, #8a8aa3);
+  margin: 0;
+}
+
+.btn-signout {
+  background: rgba(255, 68, 68, 0.15);
+  border: 1px solid rgba(255, 68, 68, 0.4);
+  color: #FF6666;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+.btn-signout:hover {
+  background: #FF4444;
+  color: #FFF;
 }
 
 /* ==========================================================================

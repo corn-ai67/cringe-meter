@@ -624,14 +624,14 @@
         <div class="profile-container">
           <div class="profile-header-card">
             <div class="profile-avatar-box">
-              <span class="profile-avatar-large" id="profileLargeAvatar">🤡</span>
+              <span class="profile-avatar-large" id="profileLargeAvatar">👤</span>
               <button class="btn-avatar-edit" id="btnEditAvatar"><i data-lucide="edit-2"></i></button>
             </div>
             <div class="profile-name-row">
-              <h2 class="profile-name" id="profileName">HyperCringe_99</h2>
+              <h2 class="profile-name" id="profileName">Anonymous</h2>
               <span class="vip-crown-badge hidden" id="profileVipCrown" title="CRINGE VIP Member">👑</span>
             </div>
-            <span class="badge rank-badge" id="profileRankBadge">🏆 Diamond II (3,420 XP)</span>
+            <span class="badge rank-badge" id="profileRankBadge">🏆 Unranked (0 XP)</span>
 
             <!-- VIP PROFILE BANNER (Only visible for active VIP) -->
             <div class="vip-profile-banner hidden" id="profileVipBanner">
@@ -649,7 +649,7 @@
 
             <div class="profile-title-tag">
               <span>TITLE: </span>
-              <strong id="profileTitleTag">"ABSOLUTELY SHAMELESS"</strong>
+              <strong id="profileTitleTag">"GUEST FIGHTER"</strong>
             </div>
           </div>
 
@@ -657,26 +657,26 @@
           <div class="account-card" id="profileAccountCard">
             <div class="account-card-info">
               <span class="account-status-label" id="accountStatusText">GUEST USER</span>
-              <h4 id="accountEmailText">Not Signed In</h4>
+              <h4 id="accountEmailText">Not Signed In (Anonymous)</h4>
             </div>
             <button class="btn-sm btn-ghost" id="btnOpenAuthModal"><i data-lucide="user-check"></i> <span id="btnAuthText">SIGN IN</span></button>
           </div>
 
           <div class="profile-stats-grid">
             <div class="pstat-item">
-              <span class="pstat-num" id="pstatMatches">142</span>
+              <span class="pstat-num" id="pstatMatches">0</span>
               <span class="pstat-lbl">TOTAL BATTLES</span>
             </div>
             <div class="pstat-item">
-              <span class="pstat-num" id="pstatWinRate">68.5%</span>
+              <span class="pstat-num" id="pstatWinRate">0%</span>
               <span class="pstat-lbl">WIN RATE</span>
             </div>
             <div class="pstat-item">
-              <span class="pstat-num" id="pstatBestStreak">12</span>
+              <span class="pstat-num" id="pstatBestStreak">0</span>
               <span class="pstat-lbl">BEST STREAK</span>
             </div>
             <div class="pstat-item">
-              <span class="pstat-num" id="pstatBreaks">89</span>
+              <span class="pstat-num" id="pstatBreaks">0</span>
               <span class="pstat-lbl">PEOPLE BROKEN 💀</span>
             </div>
           </div>
@@ -1001,6 +1001,56 @@
         <button class="btn-primary" id="btnConfirmVipCheckoutClose" style="width:100%;margin-top:16px;">CLOSE</button>
       </div>
     </div>
+  <!-- ACCOUNT SIGN IN & AUTHENTICATION MODAL -->
+  <div class="modal-overlay hidden" id="authModal">
+    <div class="modal-card auth-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="studio-badge-sm">🔐 CRINGE METER ID</span>
+          <h3 id="authModalTitle">SIGN IN TO CRINGE METER</h3>
+        </div>
+        <button class="btn-close-modal" id="btnCloseAuthModal"><i data-lucide="x"></i></button>
+      </div>
+
+      <!-- ACTIVE SIGNED-IN ACCOUNT VIEW (Visible when user is already signed in) -->
+      <div class="auth-signedin-view hidden" id="authSignedInView">
+        <div class="current-account-box">
+          <span class="account-active-badge">ACCOUNT SIGNED IN ✅</span>
+          <h3 class="current-account-name" id="modalCurrentAccountName">kaopod im god</h3>
+          <p class="current-account-email" id="modalCurrentAccountEmail">user@gmail.com</p>
+        </div>
+        <button class="btn-secondary btn-signout" id="btnAuthSignOut" style="width:100%;margin-top:14px;">
+          <i data-lucide="log-out"></i> SIGN OUT
+        </button>
+
+        <div class="auth-divider" style="margin: 18px 0; text-align: center; position: relative;">
+          <hr style="border: 0; border-top: 1px solid var(--border-color, #2a2a38);" />
+          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #14141e; padding: 0 10px; font-size: 0.75rem; color: #8a8aa3; font-weight: 700;">SWITCH TO ANOTHER ACCOUNT</span>
+        </div>
+      </div>
+
+      <!-- SIGN IN / REGISTRATION FORM -->
+      <div class="auth-form-view" id="authFormView">
+        <p class="modal-desc" id="authModalDesc" style="font-size:0.85rem;color:var(--text-dim,#8a8aa3);margin-bottom:14px;">Enter your details to save your competitive stats and leaderboard progress to the cloud:</p>
+
+        <div class="form-group" id="authUsernameGroup">
+          <label>Player / Display Name</label>
+          <input type="text" id="authUsernameInput" class="studio-input" placeholder="e.g. kaopod im god" maxlength="24" />
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label>Email Address</label>
+          <input type="email" id="authEmailInput" class="studio-input" placeholder="e.g. player@gmail.com" />
+        </div>
+
+        <div class="auth-modal-actions" style="margin-top:18px;display:flex;flex-direction:column;gap:10px;">
+          <button class="btn-primary" id="btnSubmitAuth" style="width:100%;">
+            <span id="btnSubmitAuthText">SIGN IN / CREATE ACCOUNT</span>
+          </button>
+          <button class="btn-ghost" id="btnAuthGuest" style="width:100%;">CONTINUE AS GUEST</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- CRINGE STUDIO PERSONALIZATION MODAL -->
@@ -1145,6 +1195,7 @@
   <script src="js/gameModes/staringContest.js"></script>
   <script src="js/gameModes/coopDuo.js"></script>
   <script src="js/subscriptionService.js"></script>
+  <script src="js/services/userService.js"></script>
   <script src="js/gameEngine.js"></script>
   <script src="js/online/onlineState.js"></script>
   <script src="js/online/matchmaking.js"></script>

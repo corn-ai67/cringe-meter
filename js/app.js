@@ -186,35 +186,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updatePlayerHUD(stats) {
     userNameDisplay.textContent = stats.name;
-    userCoinsDisplay.textContent = stats.coins.toLocaleString();
-    userStreakDisplay.textContent = stats.streak;
+    userCoinsDisplay.textContent = (stats.coins || 0).toLocaleString();
+    userStreakDisplay.textContent = stats.streak || 0;
 
     if (stats.avatarPhoto) {
       userAvatarEmoji.innerHTML = `<img src="${stats.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
     } else {
-      userAvatarEmoji.textContent = stats.avatar;
+      userAvatarEmoji.textContent = stats.avatar || "👤";
     }
 
-    cardStreak.textContent = `${stats.streak} Games`;
-    cardRank.textContent = stats.rank;
-    cardLevel.textContent = `LVL ${stats.level}`;
+    cardStreak.textContent = `${stats.streak || 0} Games`;
+    cardRank.textContent = stats.rank || "Unranked";
+    cardLevel.textContent = `LVL ${stats.level || 1}`;
 
-    document.getElementById('profileName').textContent = stats.name;
+    const profileNameEl = document.getElementById('profileName');
+    if (profileNameEl) profileNameEl.textContent = stats.name || "Anonymous";
 
     if (stats.avatarPhoto) {
       document.getElementById('profileLargeAvatar').innerHTML = `<img src="${stats.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
     } else {
-      document.getElementById('profileLargeAvatar').textContent = stats.avatar;
+      document.getElementById('profileLargeAvatar').textContent = stats.avatar || "👤";
     }
 
-    document.getElementById('profileRankBadge').textContent = `🏆 ${stats.rank} (${stats.xp.toLocaleString()} XP)`;
+    document.getElementById('profileRankBadge').textContent = `🏆 ${stats.rank || 'Unranked'} (${(stats.xp || 0).toLocaleString()} XP)`;
     if (document.getElementById('profileTitleTag')) {
-      document.getElementById('profileTitleTag').textContent = `"${stats.title || 'ABSOLUTELY SHAMELESS'}"`;
+      document.getElementById('profileTitleTag').textContent = `"${stats.title || 'GUEST FIGHTER'}"`;
     }
 
-    document.getElementById('pstatMatches').textContent = stats.totalMatches;
-    if (document.getElementById('pstatStreak')) document.getElementById('pstatStreak').textContent = stats.streak;
-    document.getElementById('pstatBreaks').textContent = stats.peopleBroken;
+    const matchesCount = stats.totalMatches !== undefined ? stats.totalMatches : 0;
+    document.getElementById('pstatMatches').textContent = matchesCount;
+    
+    const winRateEl = document.getElementById('pstatWinRate');
+    if (winRateEl) {
+      const rate = matchesCount > 0 ? (stats.winRate !== undefined ? stats.winRate : (Math.round(((stats.wins || 0) / matchesCount) * 1000) / 10)) : 0;
+      winRateEl.textContent = `${rate}%`;
+    }
+
+    const bestStreakEl = document.getElementById('pstatBestStreak');
+    if (bestStreakEl) {
+      bestStreakEl.textContent = stats.bestStreak || 0;
+    }
+
+    if (document.getElementById('pstatStreak')) document.getElementById('pstatStreak').textContent = stats.streak || 0;
+    document.getElementById('pstatBreaks').textContent = stats.peopleBroken !== undefined ? stats.peopleBroken : (stats.wins || 0);
 
     // VIP Indicators & Status Banner
     const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
@@ -926,40 +940,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenAuthModal = document.getElementById('btnOpenAuthModal');
   const btnCloseAuthModal = document.getElementById('btnCloseAuthModal');
   const btnSubmitAuth = document.getElementById('btnSubmitAuth');
+  const btnSubmitAuthText = document.getElementById('btnSubmitAuthText');
   const btnAuthGuest = document.getElementById('btnAuthGuest');
+  const btnAuthSignOut = document.getElementById('btnAuthSignOut');
+  const authSignedInView = document.getElementById('authSignedInView');
+  const modalCurrentAccountName = document.getElementById('modalCurrentAccountName');
+  const modalCurrentAccountEmail = document.getElementById('modalCurrentAccountEmail');
+  const authModalTitle = document.getElementById('authModalTitle');
   const authUsernameInput = document.getElementById('authUsernameInput');
   const authEmailInput = document.getElementById('authEmailInput');
-  const authPasswordInput = document.getElementById('authPasswordInput');
   const accountStatusText = document.getElementById('accountStatusText');
   const accountEmailText = document.getElementById('accountEmailText');
   const btnAuthText = document.getElementById('btnAuthText');
 
   function updateAccountUI() {
-    try {
-      const savedAccount = localStorage.getItem('cringe_meter_account');
-      if (savedAccount) {
-        const acc = JSON.parse(savedAccount);
-        if (accountStatusText) accountStatusText.textContent = "ACCOUNT SIGNED IN ✅";
-        if (accountEmailText) accountEmailText.textContent = acc.email || acc.username;
-        if (btnAuthText) btnAuthText.textContent = "SWITCH ACCOUNT";
-        if (engine) {
-          engine.signIn(acc.username || "HyperCringe_99");
-        }
-      } else {
-        if (accountStatusText) accountStatusText.textContent = "GUEST USER";
-        if (accountEmailText) accountEmailText.textContent = "Not Signed In (Anonymous)";
-        if (btnAuthText) btnAuthText.textContent = "SIGN IN";
-        if (engine) {
-          engine.signOut();
-        }
+    const user = window.userService ? window.userService.getCurrentUser() : null;
+    if (user && user.isSignedIn) {
+      if (accountStatusText) accountStatusText.textContent = "ACCOUNT SIGNED IN ✅";
+      if (accountEmailText) {
+        accountEmailText.innerHTML = `<span style="color:#FFF;font-weight:900;font-size:1rem;">${user.displayName}</span><br/><span style="font-size:0.75rem;color:var(--text-dim,#8a8aa3);font-weight:600;">${user.email || 'Cloud Account'}</span>`;
       }
-    } catch (e) {}
+      if (btnAuthText) btnAuthText.textContent = "SWITCH ACCOUNT";
+
+      if (authSignedInView) authSignedInView.classList.remove('hidden');
+      if (modalCurrentAccountName) modalCurrentAccountName.textContent = user.displayName;
+      if (modalCurrentAccountEmail) modalCurrentAccountEmail.textContent = user.email || 'Connected to Supabase';
+      if (authModalTitle) authModalTitle.textContent = "YOUR ACCOUNT";
+      if (btnSubmitAuthText) btnSubmitAuthText.textContent = "SWITCH ACCOUNT";
+    } else {
+      if (accountStatusText) accountStatusText.textContent = "GUEST USER";
+      if (accountEmailText) accountEmailText.textContent = "Not Signed In (Anonymous)";
+      if (btnAuthText) btnAuthText.textContent = "SIGN IN";
+
+      if (authSignedInView) authSignedInView.classList.add('hidden');
+      if (authModalTitle) authModalTitle.textContent = "SIGN IN TO CRINGE METER";
+      if (btnSubmitAuthText) btnSubmitAuthText.textContent = "SIGN IN / CREATE ACCOUNT";
+    }
   }
 
-  updateAccountUI();
+  if (window.userService) {
+    window.userService.onUserChange(() => {
+      updateAccountUI();
+      if (engine) updatePlayerHUD(engine.getPlayerStats());
+    });
+    window.userService.init().then(() => {
+      updateAccountUI();
+      if (engine) updatePlayerHUD(engine.getPlayerStats());
+    });
+  } else {
+    updateAccountUI();
+  }
 
   if (btnOpenAuthModal) {
     btnOpenAuthModal.addEventListener('click', () => {
+      updateAccountUI();
       if (authModal) authModal.classList.remove('hidden');
     });
   }
@@ -968,65 +1002,51 @@ document.addEventListener('DOMContentLoaded', () => {
       if (authModal) authModal.classList.add('hidden');
     });
   }
-  if (btnAuthGuest) {
-    btnAuthGuest.addEventListener('click', () => {
-      localStorage.removeItem('cringe_meter_account');
+  if (btnAuthSignOut) {
+    btnAuthSignOut.addEventListener('click', () => {
+      if (window.userService) {
+        window.userService.signOut();
+      }
       updateAccountUI();
       if (authModal) authModal.classList.add('hidden');
+      sound.playClick();
+    });
+  }
+  if (btnAuthGuest) {
+    btnAuthGuest.addEventListener('click', () => {
+      if (window.userService) {
+        window.userService.signOut();
+      }
+      updateAccountUI();
+      if (authModal) authModal.classList.add('hidden');
+      sound.playClick();
     });
   }
   if (btnSubmitAuth) {
     btnSubmitAuth.addEventListener('click', async () => {
       const username = authUsernameInput ? authUsernameInput.value.trim() : '';
       const email = authEmailInput ? authEmailInput.value.trim() : '';
-      if (username || email) {
-        const accData = {
-          username: username || 'HyperCringe_99',
-          email: email || `${username || 'user'}@cringemeter.io`,
-          signedInAt: new Date().toISOString()
-        };
-        localStorage.setItem('cringe_meter_account', JSON.stringify(accData));
-        updateAccountUI();
+      if (!username && !email) {
+        alert("Please enter your player display name or email address.");
+        return;
+      }
 
-        // Sync to Supabase Cloud Database via Node.js backend
-        try {
-          const internalUserId = window.onlineState?.userId || engine?.player?.userId || `cm_${Date.now()}`;
-          // 1. Sync User Profile
-          fetch('/api/users/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: internalUserId,
-              profile: {
-                displayName: accData.username,
-                email: accData.email,
-                avatar: engine?.player?.avatar || '🤡',
-                title: engine?.player?.title || 'ABSOLUTELY SHAMELESS'
-              }
-            })
-          }).catch(() => {});
+      if (btnSubmitAuthText) btnSubmitAuthText.textContent = "CONNECTING...";
 
-          // 2. If valid email provided, register into email_subscribers in Supabase
-          if (email && email.includes('@')) {
-            fetch('/api/subscribers', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: email,
-                displayName: accData.username,
-                userId: internalUserId,
-                source: 'auth_modal'
-              })
-            }).catch(() => {});
-          }
-        } catch (e) {
-          console.warn("[AUTH] Server sync error:", e);
+      try {
+        if (window.userService) {
+          await window.userService.signIn({ email, username });
         }
-
+        updateAccountUI();
+        if (authUsernameInput) authUsernameInput.value = '';
+        if (authEmailInput) authEmailInput.value = '';
         if (authModal) authModal.classList.add('hidden');
-        sound.playClick();
-      } else {
-        alert("Please enter a username or email address.");
+        sound.playVictory();
+      } catch (err) {
+        console.error("[AUTH] Sign in failed:", err);
+        alert("Sign in failed. Please try again.");
+      } finally {
+        updateAccountUI();
       }
     });
   }

@@ -21,14 +21,16 @@ class OnlineState {
   }
 
   getUserIdentity() {
+    const user = window.userService ? window.userService.getCurrentUser() : null;
     const stats = window.gameEngine ? window.gameEngine.getPlayerStats() : {};
     return {
-      userId: this.internalUserId,
-      displayName: stats.name || 'HyperCringe_99',
-      avatar: stats.avatar || '🤡',
-      avatarPhoto: stats.avatarPhoto || null,
-      rankTitle: stats.title || 'ABSOLUTELY SHAMELESS',
-      taunt: stats.taunt || 'YOU BROKE THEM 💀'
+      userId: user?.internalUserId || this.internalUserId,
+      displayName: user?.displayName || stats.name || (user?.isSignedIn ? 'Player' : 'Anonymous'),
+      avatar: user?.avatar || stats.avatar || (user?.isSignedIn ? '🤡' : '👤'),
+      avatarPhoto: user?.avatarPhoto || stats.avatarPhoto || null,
+      rankTitle: user?.rankTitle || stats.rank || 'Unranked',
+      title: user?.title || stats.title || 'GUEST FIGHTER',
+      taunt: user?.taunt || stats.taunt || 'YOU BROKE THEM 💀'
     };
   }
 
