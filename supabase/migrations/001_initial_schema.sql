@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS update_users_modtime ON users;
 CREATE TRIGGER update_users_modtime
     BEFORE UPDATE ON users
     FOR EACH ROW
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS player_stats (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS update_player_stats_modtime ON player_stats;
 CREATE TRIGGER update_player_stats_modtime
     BEFORE UPDATE ON player_stats
     FOR EACH ROW
@@ -98,6 +100,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS update_subscriptions_modtime ON subscriptions;
 CREATE TRIGGER update_subscriptions_modtime
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW
@@ -120,6 +123,7 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS update_email_subscribers_modtime ON email_subscribers;
 CREATE TRIGGER update_email_subscribers_modtime
     BEFORE UPDATE ON email_subscribers
     FOR EACH ROW
@@ -260,15 +264,36 @@ ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blocks ENABLE ROW LEVEL SECURITY;
 
 -- Allow read-only access to public profile & leaderboard views for anonymous/authenticated roles
-CREATE POLICY "Public read users" ON users FOR SELECT USING (true);
-CREATE POLICY "Public read player_stats" ON player_stats FOR SELECT USING (true);
-CREATE POLICY "Public read matches" ON matches FOR SELECT USING (true);
-
--- Allow full management only for service_role (used by our Node.js backend)
-CREATE POLICY "Service role full access users" ON users FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access player_stats" ON player_stats FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access matches" ON matches FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access subscriptions" ON subscriptions FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access email_subscribers" ON email_subscribers FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access reports" ON reports FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access blocks" ON blocks FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public read users') THEN
+        CREATE POLICY "Public read users" ON users FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public read player_stats') THEN
+        CREATE POLICY "Public read player_stats" ON player_stats FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public read matches') THEN
+        CREATE POLICY "Public read matches" ON matches FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access users') THEN
+        CREATE POLICY "Service role full access users" ON users FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access player_stats') THEN
+        CREATE POLICY "Service role full access player_stats" ON player_stats FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access matches') THEN
+        CREATE POLICY "Service role full access matches" ON matches FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access subscriptions') THEN
+        CREATE POLICY "Service role full access subscriptions" ON subscriptions FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access email_subscribers') THEN
+        CREATE POLICY "Service role full access email_subscribers" ON email_subscribers FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access reports') THEN
+        CREATE POLICY "Service role full access reports" ON reports FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access blocks') THEN
+        CREATE POLICY "Service role full access blocks" ON blocks FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
