@@ -63,6 +63,10 @@ class MatchmakingQueue {
     return null;
   }
 
+  findMatch() {
+    return this.findPair();
+  }
+
   getQueueLength() {
     return this.queue.length;
   }

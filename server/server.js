@@ -184,6 +184,18 @@ app.post('/api/blocks', async (req, res) => {
 });
 
 // ====================================================================
+// 8. LIVEKIT TOKEN ISSUANCE ENDPOINT
+// ====================================================================
+app.post('/api/livekit/token', async (req, res) => {
+  const { roomName, participantIdentity, participantName } = req.body;
+  if (!roomName || !participantIdentity) {
+    return res.status(400).json({ success: false, message: 'Missing roomName or participantIdentity' });
+  }
+  const tokenData = await generateLiveKitToken(roomName, participantIdentity, participantName);
+  res.json({ success: true, ...tokenData });
+});
+
+// ====================================================================
 // 8. SOCKET.IO MULTIPLAYER & REAL-TIME EVENT HANDLING
 // ====================================================================
 const server = http.createServer(app);
@@ -350,7 +362,7 @@ async function attemptMatchmaking() {
       livekit: {
         url: livekitUrl,
         roomName: livekitRoomName,
-        token: tokenA
+        token: tokenA.token || tokenA
       }
     });
 
@@ -368,7 +380,7 @@ async function attemptMatchmaking() {
       livekit: {
         url: livekitUrl,
         roomName: livekitRoomName,
-        token: tokenB
+        token: tokenB.token || tokenB
       }
     });
 

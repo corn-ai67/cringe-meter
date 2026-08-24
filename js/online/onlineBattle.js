@@ -179,7 +179,36 @@ class OnlineBattleController {
     if (mmMatchFoundState) mmMatchFoundState.classList.add('hidden');
     if (mmTitle) mmTitle.textContent = "SEARCHING FOR STRANGER...";
 
+    if (this.matchmakingTimeout) clearTimeout(this.matchmakingTimeout);
+
+    // 1. Request stranger match via Socket.IO
     this.net.findMatch();
+
+    // 2. Fallback: If no other human is in the queue within 4.5 seconds,
+    // match with active challenger so the player is never left hanging
+    this.matchmakingTimeout = setTimeout(() => {
+      if (this.net.status === 'SEARCHING' || !this.currentMatchData) {
+        console.log("[MATCHMAKING] Auto-pairing with active arena challenger...");
+        const localMatch = window.gameEngine ? window.gameEngine.startMatchmaking() : null;
+        if (localMatch) {
+          this.handleMatchFound({
+            sessionId: `cringe_match_${Date.now()}`,
+            role: localMatch.role,
+            opponent: localMatch.opponent,
+            cringePrompt: localMatch.cringePrompt,
+            isSimulated: true
+          });
+        }
+      }
+    }, 4500);
+  }
+
+  cancelMatchmaking() {
+    if (this.matchmakingTimeout) {
+      clearTimeout(this.matchmakingTimeout);
+      this.matchmakingTimeout = null;
+    }
+    this.net.cancelMatch();
   }
 
   handleStatusChange(status) {
@@ -191,6 +220,10 @@ class OnlineBattleController {
   }
 
   async handleMatchFound(matchData) {
+    if (this.matchmakingTimeout) {
+      clearTimeout(this.matchmakingTimeout);
+      this.matchmakingTimeout = null;
+    }
     this.currentMatchData = matchData;
     if (window.soundEngine) window.soundEngine.playMatchFound();
 

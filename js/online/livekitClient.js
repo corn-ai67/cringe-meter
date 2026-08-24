@@ -87,7 +87,8 @@ class LiveKitClientEngine {
         });
 
         // Connect to LiveKit room
-        await this.room.connect(livekitConfig.url, livekitConfig.token);
+        const tokenStr = (livekitConfig.token && typeof livekitConfig.token === 'object') ? (livekitConfig.token.token || '') : (livekitConfig.token || '');
+        await this.room.connect(livekitConfig.url, tokenStr);
         console.log(`[LIVEKIT] Successfully connected to room: ${livekitConfig.roomName}`);
 
         // Check for any participants already present in the room

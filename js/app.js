@@ -446,7 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnCancelMM.addEventListener('click', () => {
-    if (window.onlineMatchmaker) {
+    if (window.onlineBattleController) {
+      window.onlineBattleController.cancelMatchmaking();
+    } else if (window.onlineMatchmaker) {
       window.onlineMatchmaker.cancelMatch();
     }
     switchView('view-home');
