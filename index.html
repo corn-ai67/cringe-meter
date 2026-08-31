@@ -14,7 +14,9 @@
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body class="mobile-wrapper-body">
 
@@ -365,7 +367,7 @@
           <!-- DUAL LIVE VIDEO BATTLE STREAMS -->
           <div class="video-battle-grid">
             <div class="video-box opponent-video-box">
-              <div class="video-overlay-tag" id="oppRoleBadge">DEFENDER 😐</div>
+              <div class="video-overlay-tag" id="oppRoleBadge">Opponent</div>
               <div class="video-player-name" id="oppVideoName">ShadowGiggle_X</div>
               
               <!-- Real WebRTC Stranger Video Stream -->
@@ -378,24 +380,11 @@
                 <span class="cam-off-sub">THE STRANGER IS HIDING FROM THE CRINGE</span>
               </div>
 
-              <!-- Simulated Fallback Avatar -->
-              <div class="simulated-opp-video" id="simulatedOppVideo">
-                <div class="opp-face-emoji" id="oppFaceEmoji">😐</div>
-                <div class="opp-reaction-sub" id="oppReactionSub">Poker Face Active...</div>
-              </div>
-
-              <div class="smile-risk-hud">
-                <span class="risk-label">LAUGH RISK:</span>
-                <div class="risk-bar-track">
-                  <div class="risk-bar-fill" id="smileRiskFill"></div>
-                </div>
-                <span class="risk-val" id="smileRiskVal">12%</span>
-              </div>
             </div>
 
             <!-- Self Video Feed (Picture-in-Picture Overlay) -->
             <div class="video-box self-video-box">
-              <div class="video-overlay-tag" id="selfRoleBadge">PERFORMER 🤡</div>
+              <div class="video-overlay-tag" id="selfRoleBadge">You</div>
               <video id="localVideoFeed" autoplay playsinline webkit-playsinline muted class="local-cam-feed hidden"></video>
               <div class="cam-fallback" id="camFallback">
                 <span class="cam-fallback-avatar" id="selfCamEmoji">🤡</span>
@@ -404,25 +393,25 @@
               <button class="btn-icon btn-cam-toggle" id="btnToggleCam" title="Toggle Live Webcam">
                 <i data-lucide="camera"></i>
               </button>
+              <!-- Horizontal Smile Meter (Landscape bar underneath player's camera) -->
+              <div class="player-smile-meter-container" id="playerSmileMeterContainer">
+                <div class="player-smile-meter-track">
+                  <div class="player-smile-meter-fill" id="playerSmileMeterFill"></div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- ONLINE MEDIA CONTROLS & NEXT BUTTON -->
+          <!-- ONLINE MEDIA CONTROLS -->
           <div class="online-controls-bar" id="onlineControlsBar">
-            <button class="btn-online-action" id="btnOnlineMuteMic" title="Mute Microphone [M]">
+            <button class="btn-online-action" id="btnOnlineMuteMic" title="Mute Microphone">
               <i data-lucide="mic"></i>
-              <kbd class="btn-kbd-mini">M</kbd>
             </button>
-            <button class="btn-online-action" id="btnOnlineToggleCam" title="Toggle Camera [C]">
+            <button class="btn-online-action" id="btnOnlineToggleCam" title="Toggle Camera">
               <i data-lucide="camera"></i>
-              <kbd class="btn-kbd-mini">C</kbd>
             </button>
             <button class="btn-online-action btn-report-action" id="btnOpenReportModal" title="Report Stranger"><i data-lucide="flag"></i></button>
             <button class="btn-online-action btn-block-action" id="btnBlockStranger" title="Block Stranger"><i data-lucide="shield-alert"></i></button>
-            <button class="btn-next-stranger" id="btnNextStranger" title="Skip to next stranger [SPACE]">
-              <span>NEXT →</span>
-              <kbd class="hotkey-badge-inline">SPACE</kbd>
-            </button>
           </div>
 
           <!-- PERFORMER INTERFACE -->
@@ -431,33 +420,27 @@
               <div class="prompt-header">
                 <span class="badge ai-prompt-badge" id="promptTypeBadge">⚡ AI CRINGE CHALLENGE</span>
                 <span class="badge custom-prompt-badge hidden" id="customPromptBadge">⭐ MY PROMPT</span>
-                <button class="btn-xs btn-shuffle" id="btnShufflePrompt" title="Shuffle prompt [S]">
-                  <i data-lucide="refresh-cw"></i> <span>SHUFFLE</span> <kbd class="btn-kbd-mini">S</kbd>
+                <button class="btn-xs btn-shuffle" id="btnShufflePrompt" title="Shuffle prompt">
+                  <i data-lucide="refresh-cw"></i> <span>SHUFFLE</span>
                 </button>
               </div>
               <p class="prompt-text" id="aiPromptText">"Attempt to pitch an invisible bucket of air to your opponent using an ultra-dramatic French accent."</p>
             </div>
 
             <div class="performer-tools-row">
-              <button class="btn-tool" id="btnSoundAirhorn" title="Airhorn [1]"><span class="tool-name">🔊 AIRHORN</span> <kbd class="btn-kbd-mini">1</kbd></button>
-              <button class="btn-tool" id="btnSoundHonk" title="Honk [2]"><span class="tool-name">🤡 HONK</span> <kbd class="btn-kbd-mini">2</kbd></button>
-              <button class="btn-tool" id="btnSoundBoing" title="Boing [3]"><span class="tool-name">🤪 BOING</span> <kbd class="btn-kbd-mini">3</kbd></button>
-              <button class="btn-tool" id="btnSoundEvil" title="Evil Laugh [4]"><span class="tool-name">😈 EVIL</span> <kbd class="btn-kbd-mini">4</kbd></button>
+              <button class="btn-tool" id="btnSoundAirhorn" title="Airhorn"><span class="tool-name">🔊 AIRHORN</span></button>
+              <button class="btn-tool" id="btnSoundHonk" title="Honk"><span class="tool-name">🤡 HONK</span></button>
+              <button class="btn-tool" id="btnSoundBoing" title="Boing"><span class="tool-name">🤪 BOING</span></button>
+              <button class="btn-tool" id="btnSoundEvil" title="Evil Laugh"><span class="tool-name">😈 EVIL</span></button>
             </div>
           </div>
 
           <!-- DEFENDER INTERFACE -->
           <div class="battle-action-panel defender-panel hidden" id="defenderPanel">
-            <div class="defender-warning-box">
-              <span class="def-warning-icon">⚠️</span>
-              <span>SURVIVE 10 SECONDS WITHOUT SMILING OR LAUGHING!</span>
-            </div>
-
-            <button class="btn-i-laughed" id="btnILaughed" title="Tap or press [SPACE] if you laughed">
+            <button class="btn-i-laughed" id="btnILaughed" title="Tap if you broke">
               <div class="btn-laughed-content">
-                <span class="laughed-emoji">💀</span>
                 <span class="laughed-main-text">I LAUGHED 💀</span>
-                <span class="laughed-subtext">TAP OR PRESS <kbd class="hotkey-badge-inline">SPACE</kbd> IF YOU BROKE</span>
+                <span class="laughed-subtext">Tap if you broke</span>
               </div>
             </button>
           </div>
@@ -1182,25 +1165,25 @@
   </div>
 
   <!-- App Script Modules -->
-  <script src="js/audio.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/cringePrompts.js"></script>
-  <script src="js/faceDetector.js"></script>
-  <script src="js/gameModes/baseMode.js"></script>
-  <script src="js/gameModes/dontLaugh.js"></script>
-  <script src="js/gameModes/staringContest.js"></script>
-  <script src="js/gameModes/coopDuo.js"></script>
-  <script src="js/subscriptionService.js"></script>
-  <script src="js/services/progressionService.js"></script>
-  <script src="js/services/userService.js"></script>
-  <script src="js/gameEngine.js"></script>
-  <script src="js/online/onlineState.js"></script>
-  <script src="js/online/matchmaking.js"></script>
-  <script src="js/online/livekitClient.js"></script>
-  <script src="js/online/reactionAnalyzer.js"></script>
-  <script src="js/online/onlineBattle.js"></script>
-  <script src="js/pcControls.js"></script>
-  <script src="js/services/leaderboardService.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/audio.js?v=3"></script>
+  <script src="js/i18n.js?v=3"></script>
+  <script src="js/cringePrompts.js?v=3"></script>
+  <script src="js/faceDetector.js?v=3"></script>
+  <script src="js/gameModes/baseMode.js?v=3"></script>
+  <script src="js/gameModes/dontLaugh.js?v=3"></script>
+  <script src="js/gameModes/staringContest.js?v=3"></script>
+  <script src="js/gameModes/coopDuo.js?v=3"></script>
+  <script src="js/subscriptionService.js?v=3"></script>
+  <script src="js/services/progressionService.js?v=3"></script>
+  <script src="js/services/userService.js?v=3"></script>
+  <script src="js/gameEngine.js?v=3"></script>
+  <script src="js/online/onlineState.js?v=3"></script>
+  <script src="js/online/matchmaking.js?v=3"></script>
+  <script src="js/online/livekitClient.js?v=3"></script>
+  <script src="js/online/reactionAnalyzer.js?v=3"></script>
+  <script src="js/online/onlineBattle.js?v=3"></script>
+  <script src="js/pcControls.js?v=3"></script>
+  <script src="js/services/leaderboardService.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>

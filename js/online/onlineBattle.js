@@ -29,21 +29,12 @@ class OnlineBattleController {
   }
 
   bindDOMEvents() {
-    const btnNextStranger = document.getElementById('btnNextStranger');
     const btnOnlineMuteMic = document.getElementById('btnOnlineMuteMic');
     const btnOnlineToggleCam = document.getElementById('btnOnlineToggleCam');
     const btnOpenReportModal = document.getElementById('btnOpenReportModal');
     const btnSubmitReport = document.getElementById('btnSubmitReport');
     const btnCloseReportModal = document.getElementById('btnCloseReportModal');
     const btnBlockStranger = document.getElementById('btnBlockStranger');
-
-    // NEXT → Stranger Skipping
-    if (btnNextStranger) {
-      btnNextStranger.addEventListener('click', () => {
-        if (window.soundEngine) window.soundEngine.playClick();
-        this.nextStranger();
-      });
-    }
 
     // Mute Microphone
     if (btnOnlineMuteMic) {
@@ -179,28 +170,13 @@ class OnlineBattleController {
     if (mmMatchFoundState) mmMatchFoundState.classList.add('hidden');
     if (mmTitle) mmTitle.textContent = "SEARCHING FOR STRANGER...";
 
-    if (this.matchmakingTimeout) clearTimeout(this.matchmakingTimeout);
+    if (this.matchmakingTimeout) {
+      clearTimeout(this.matchmakingTimeout);
+      this.matchmakingTimeout = null;
+    }
 
-    // 1. Request stranger match via Socket.IO
+    // Request real stranger match via Socket.IO
     this.net.findMatch();
-
-    // 2. Fallback: If no other human is in the queue within 4.5 seconds,
-    // match with active challenger so the player is never left hanging
-    this.matchmakingTimeout = setTimeout(() => {
-      if (this.net.status === 'SEARCHING' || !this.currentMatchData) {
-        console.log("[MATCHMAKING] Auto-pairing with active arena challenger...");
-        const localMatch = window.gameEngine ? window.gameEngine.startMatchmaking() : null;
-        if (localMatch) {
-          this.handleMatchFound({
-            sessionId: `cringe_match_${Date.now()}`,
-            role: localMatch.role,
-            opponent: localMatch.opponent,
-            cringePrompt: localMatch.cringePrompt,
-            isSimulated: true
-          });
-        }
-      }
-    }, 4500);
   }
 
   cancelMatchmaking() {
@@ -248,10 +224,12 @@ class OnlineBattleController {
     if (mmNameP2) mmNameP2.textContent = matchData.opponent.displayName || 'Stranger';
     if (mmAvatarP2) mmAvatarP2.textContent = matchData.opponent.avatar || '🤖';
 
+    const oppName = matchData.opponent?.displayName || matchData.opponent?.name || "Opponent";
+
     if (matchData.role === 'PERFORMER') {
       if (roleIcon) roleIcon.textContent = "🤡";
-      if (roleTitle) roleTitle.textContent = "YOU ARE THE PERFORMER 🤡";
-      if (roleDesc) roleDesc.textContent = "Deliver your cringe challenge to break the stranger!";
+      if (roleTitle) roleTitle.textContent = `MAKE ${oppName.toUpperCase()} BREAK 🤡`;
+      if (roleDesc) roleDesc.textContent = "Deliver your cringe challenge to break their poker face!";
     } else {
       if (roleIcon) roleIcon.textContent = "😐";
       if (roleTitle) roleTitle.textContent = "DON'T LAUGH! 😐";
@@ -267,6 +245,10 @@ class OnlineBattleController {
   async launchOnlineBattle(matchData) {
     if (window.appSwitchView) window.appSwitchView('view-battle');
 
+    const oppName = matchData.opponent?.displayName || matchData.opponent?.name || "Opponent";
+    const selfStats = window.gameEngine ? window.gameEngine.getPlayerStats() : {};
+    const selfName = selfStats.name || "You";
+
     const oppVideoName = document.getElementById('oppVideoName');
     const oppFaceEmoji = document.getElementById('oppFaceEmoji');
     const selfRoleBadge = document.getElementById('selfRoleBadge');
@@ -274,17 +256,16 @@ class OnlineBattleController {
     const performerPanel = document.getElementById('performerPanel');
     const defenderPanel = document.getElementById('defenderPanel');
 
-    if (oppVideoName) oppVideoName.textContent = matchData.opponent.displayName;
-    if (oppFaceEmoji) oppFaceEmoji.textContent = matchData.opponent.avatar;
+    if (oppVideoName) oppVideoName.textContent = oppName;
+    if (oppFaceEmoji) oppFaceEmoji.textContent = matchData.opponent?.avatar || "🤡";
+
+    if (selfRoleBadge) selfRoleBadge.textContent = `${selfName} (You)`;
+    if (oppRoleBadge) oppRoleBadge.textContent = oppName;
 
     if (matchData.role === 'PERFORMER') {
-      if (selfRoleBadge) selfRoleBadge.textContent = "PERFORMER 🤡";
-      if (oppRoleBadge) oppRoleBadge.textContent = "DEFENDER 😐";
       if (performerPanel) performerPanel.classList.remove('hidden');
       if (defenderPanel) defenderPanel.classList.add('hidden');
     } else {
-      if (selfRoleBadge) selfRoleBadge.textContent = "DEFENDER 😐";
-      if (oppRoleBadge) oppRoleBadge.textContent = "PERFORMER 🤡";
       if (performerPanel) performerPanel.classList.add('hidden');
       if (defenderPanel) defenderPanel.classList.remove('hidden');
     }
@@ -296,9 +277,14 @@ class OnlineBattleController {
     const remoteVideoEl = document.getElementById('remoteVideoFeed');
     await this.livekit.connectAndPublish(matchData.livekit, localVideoEl, remoteVideoEl);
 
-    // Start local reaction analyzer
+    // Start local reaction analyzer & face smile detector
     if (window.reactionAnalyzer) {
       window.reactionAnalyzer.start(localVideoEl);
+    }
+    if (window.faceDetectorService) {
+      window.faceDetectorService.setBattleActive(true);
+      window.faceDetectorService.attachVideoElement(localVideoEl);
+      window.faceDetectorService.startDetectionLoop();
     }
 
     // Local engine battle simulation tick
@@ -308,6 +294,10 @@ class OnlineBattleController {
   nextStranger() {
     this.livekit.disconnect();
     if (window.reactionAnalyzer) window.reactionAnalyzer.stop();
+    if (window.faceDetectorService) {
+      window.faceDetectorService.setBattleActive(false);
+      window.faceDetectorService.stopDetectionLoop();
+    }
 
     if (window.appSwitchView) window.appSwitchView('view-matchmaking');
 

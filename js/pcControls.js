@@ -127,20 +127,6 @@
             return;
           }
 
-          if (activeScreenId === 'view-battle') {
-            const defenderPanel = document.getElementById('defenderPanel');
-            const isDefender = defenderPanel && !defenderPanel.classList.contains('hidden');
-
-            if (isDefender) {
-              const btnILaughed = document.getElementById('btnILaughed');
-              if (btnILaughed) btnILaughed.click();
-            } else {
-              const btnNext = document.getElementById('btnNextStranger');
-              if (btnNext) btnNext.click();
-            }
-            return;
-          }
-
           if (activeScreenId === 'view-results') {
             const btnRematch = document.getElementById('btnRematch');
             if (btnRematch) btnRematch.click();

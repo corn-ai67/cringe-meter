@@ -221,25 +221,6 @@ class GameEngine {
     this.timerInterval = setInterval(() => {
       this.activeMode.tick();
     }, 1000);
-
-    this.startSimulatedOpponentReaction();
-  }
-
-  startSimulatedOpponentReaction() {
-    if (this.simulatedOpponentInterval) clearInterval(this.simulatedOpponentInterval);
-
-    let oppBreakChance = 0.05;
-
-    this.simulatedOpponentInterval = setInterval(() => {
-      if (!this.activeMode.matchActive) return;
-
-      if (this.currentMatch.role === 'PERFORMER') {
-        oppBreakChance += 0.015;
-        if (Math.random() < oppBreakChance) {
-          this.triggerMatchEnd('OPPONENT_LAUGHED');
-        }
-      }
-    }, 1500);
   }
 
   updateBattleHUD(timeLeft, cringeLevel) {

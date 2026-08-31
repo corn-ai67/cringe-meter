@@ -127,6 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('app-entered');
     }
 
+    if (viewId !== 'view-battle' && faceSensor) {
+      faceSensor.setBattleActive(false);
+    }
+
     views.forEach(view => {
       if (view.id === viewId) {
         view.classList.add('active');
@@ -288,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     onMatchEnd: (results, updatedPlayer) => {
       updatePlayerHUD(updatedPlayer);
+      faceSensor.setBattleActive(false);
       faceSensor.stopCamera();
 
       resultTitle.textContent = results.title;
@@ -472,46 +477,38 @@ document.addEventListener('DOMContentLoaded', () => {
   function launchBattleView(matchData) {
     switchView('view-battle');
 
-    oppVideoName.textContent = matchData.opponent.name;
-    oppFaceEmoji.textContent = matchData.opponent.avatar;
+    const oppName = matchData.opponent?.displayName || matchData.opponent?.name || "Opponent";
+    const selfStats = engine.getPlayerStats();
+    const selfName = selfStats.name || "You";
+
+    if (oppVideoName) oppVideoName.textContent = oppName;
+    if (oppFaceEmoji) oppFaceEmoji.textContent = matchData.opponent?.avatar || "🤡";
+
+    if (selfRoleBadge) selfRoleBadge.textContent = `${selfName} (You)`;
+    if (oppRoleBadge) oppRoleBadge.textContent = oppName;
 
     if (matchData.role === 'PERFORMER') {
-      selfRoleBadge.textContent = "PERFORMER 🤡";
-      oppRoleBadge.textContent = "DEFENDER 😐";
-      performerPanel.classList.remove('hidden');
-      defenderPanel.classList.add('hidden');
+      if (performerPanel) performerPanel.classList.remove('hidden');
+      if (defenderPanel) defenderPanel.classList.add('hidden');
       updatePromptDisplay(matchData.cringePrompt);
     } else {
-      selfRoleBadge.textContent = "DEFENDER 😐";
-      oppRoleBadge.textContent = "PERFORMER 🤡";
-      performerPanel.classList.add('hidden');
-      defenderPanel.classList.remove('hidden');
+      if (performerPanel) performerPanel.classList.add('hidden');
+      if (defenderPanel) defenderPanel.classList.remove('hidden');
     }
 
+    faceSensor.setBattleActive(true);
     faceSensor.startCamera(localVideoFeed);
-
-    faceSensor.onSmileUpdate((riskPct) => {
-      smileRiskFill.style.width = `${riskPct}%`;
-      smileRiskVal.textContent = `${riskPct}%`;
-
-      if (riskPct > 60) {
-        smileRiskFill.style.backgroundColor = "var(--accent-magenta)";
-        smileRiskVal.style.color = "var(--accent-magenta)";
-      } else if (riskPct > 35) {
-        smileRiskFill.style.backgroundColor = "var(--accent-gold)";
-        smileRiskVal.style.color = "var(--accent-gold)";
-      } else {
-        smileRiskFill.style.backgroundColor = "var(--accent-green)";
-        smileRiskVal.style.color = "var(--accent-green)";
-      }
-
-      if (matchData.role === 'DEFENDER' && riskPct >= 90) {
-        engine.triggerMatchEnd('DEFENDER_LAUGHED');
-      }
-    });
 
     engine.startBattle();
   }
+
+  // Hook faceSensor lose event (triggers on 5s continuous full smile or 5s face/mouth covered)
+  faceSensor.onLose((reason) => {
+    if (window.onlineMatchmaker && window.onlineMatchmaker.status === 'CONNECTED') {
+      window.onlineMatchmaker.triggerLaughed();
+    }
+    engine.triggerMatchEnd('DEFENDER_LAUGHED');
+  });
 
   btnShufflePrompt.addEventListener('click', () => {
     sound.playClick();
