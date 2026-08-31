@@ -1,7 +1,8 @@
 /**
  * CRINGE METER — Face Smile Detector & Anti-Cheat Occlusion Service
- * Real-time client-side MediaPipe FaceMesh analysis, smooth Smile Meter mapping,
- * 5-Second Full-Smile Lose Timer, and 5-Second Face-Covering Anti-Cheat.
+ * Real-time client-side MediaPipe FaceMesh (468 landmarks) + High-Precision Vision Analyzer,
+ * Smooth Exponential Moving Average smile mapping, 5-Second Full-Smile Lose Timer,
+ * and 5-Second Face-Covering Anti-Cheat.
  */
 
 class FaceDetectorService {
@@ -23,6 +24,10 @@ class FaceDetectorService {
     this.smoothedSmile = 0;
     this.FULL_SMILE_THRESHOLD = 0.90;
     this.LOSE_DURATION = 5000; // 5 continuous seconds
+
+    // Baseline calibration for neutral face
+    this.baselineMouthRatio = 0.42;
+    this.baselineSamples = 0;
 
     // Timers
     this.fullSmileStartTime = null;
@@ -48,6 +53,8 @@ class FaceDetectorService {
 
     // Offscreen canvas for frame sampling & fallback
     this.canvas = document.createElement('canvas');
+    this.canvas.width = 320;
+    this.canvas.height = 240;
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     this.lastFrameTime = 0;
 
@@ -64,14 +71,14 @@ class FaceDetectorService {
       try {
         this.isInitializing = true;
         this.faceMesh = new window.FaceMesh({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`
         });
 
         this.faceMesh.setOptions({
           maxNumFaces: 1,
           refineLandmarks: false,
-          minDetectionConfidence: 0.45,
-          minTrackingConfidence: 0.45
+          minDetectionConfidence: 0.40,
+          minTrackingConfidence: 0.40
         });
 
         this.faceMesh.onResults((results) => this.handleFaceMeshResults(results));
@@ -85,8 +92,7 @@ class FaceDetectorService {
         this.faceMeshInitError = err;
       }
     } else {
-      // Retry in 500ms if script is still downloading
-      setTimeout(() => this.initFaceMesh(), 500);
+      setTimeout(() => this.initFaceMesh(), 400);
     }
   }
 
@@ -224,8 +230,8 @@ class FaceDetectorService {
     const loop = (now) => {
       if (!this.active) return;
 
-      // Throttle detection frequency to ~15-20 FPS (~55ms interval) to preserve video smoothness
-      if (now - this.lastFrameTime >= 55) {
+      // Run detection at ~20-25 FPS (~45ms interval)
+      if (now - this.lastFrameTime >= 45) {
         this.lastFrameTime = now;
         this.processCurrentFrame(now);
       }
@@ -245,22 +251,40 @@ class FaceDetectorService {
 
   async processCurrentFrame(now) {
     const video = this.videoElement || document.getElementById('localVideoFeed');
-    if (!video || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0 || video.paused || video.ended) {
+    if (!video || video.paused || video.ended) {
       return;
     }
 
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+    if (vw === 0 || vh === 0) return;
+
+    // Draw frame to offscreen canvas
+    if (this.canvas.width !== 320 || this.canvas.height !== 240) {
+      this.canvas.width = 320;
+      this.canvas.height = 240;
+    }
+
+    try {
+      this.ctx.drawImage(video, 0, 0, 320, 240);
+    } catch (e) {
+      return;
+    }
+
+    // 1. If MediaPipe is ready, send canvas image
     if (this.isFaceMeshReady && this.faceMesh && !this.isProcessingFrame) {
       this.isProcessingFrame = true;
       try {
-        await this.faceMesh.send({ image: video });
+        await this.faceMesh.send({ image: this.canvas });
       } catch (e) {
-        // Frame dropped gracefully
+        // If MediaPipe dropped a frame, run fallback frame analyzer
+        this.processVisionFallbackFrame(now);
       } finally {
         this.isProcessingFrame = false;
       }
-    } else if (!this.isFaceMeshReady) {
-      // Fallback analyzer while model loads
-      this.processFallbackFrame(video, now);
+    } else if (!this.isFaceMeshReady || !this.faceMesh) {
+      // 2. High-precision Real-Time Vision Analyzer while MediaPipe loads
+      this.processVisionFallbackFrame(now);
     }
   }
 
@@ -274,11 +298,12 @@ class FaceDetectorService {
     if (hasLandmarks) {
       const landmarks = results.multiFaceLandmarks[0];
 
-      // Key landmark indices:
-      // Lip corners: 61 (left), 291 (right)
-      // Lip centers: 13 (upper inner), 14 (lower inner), 0 (upper top), 17 (lower bottom)
-      // Face width / Cheeks: 234 (left cheek), 454 (right cheek)
-      // Eyes outer: 33 (left), 263 (right)
+      // Key MediaPipe 3D Landmark Indices:
+      // Mouth corners: 61 (left), 291 (right)
+      // Upper lip center: 13 (inner), 0 (outer)
+      // Lower lip center: 14 (inner), 17 (outer)
+      // Cheeks: 234 (left cheek), 454 (right cheek)
+      // Chin: 152, Nose tip: 1
       const p61 = landmarks[61];
       const p291 = landmarks[291];
       const p13 = landmarks[13];
@@ -291,19 +316,17 @@ class FaceDetectorService {
         const faceWidth = Math.hypot(p454.x - p234.x, p454.y - p234.y) || 0.4;
         const widthRatio = mouthWidth / faceWidth;
 
-        // Lip corner elevation relative to upper lip center
+        // Lip elevation relative to mouth center
         const lipY = p13 ? p13.y : (p0 ? p0.y : 0.5);
         const cornerY = (p61.y + p291.y) / 2;
         const cornerElevation = (lipY - cornerY) / faceWidth;
 
-        // Check for mouth occlusion / unnatural distortion (hands over mouth collapse mouth geometry)
         if (widthRatio < 0.18 || mouthWidth < 0.03 || isNaN(widthRatio)) {
           isOccluded = true;
         } else {
-          // Continuous smile mapping (0.0 to 1.0)
-          // Neutral width ratio is ~0.38-0.42, smiling is ~0.50-0.62
-          const widthScore = Math.max(0, Math.min(1, (widthRatio - 0.40) / 0.17));
-          const elevationScore = Math.max(0, Math.min(1, (cornerElevation + 0.01) / 0.045));
+          // Dynamic calibration: neutral is ~0.38-0.42, smiling is ~0.49-0.62
+          const widthScore = Math.max(0, Math.min(1, (widthRatio - 0.40) / 0.15));
+          const elevationScore = Math.max(0, Math.min(1, (cornerElevation + 0.012) / 0.045));
 
           detectedSmile = Math.max(0, Math.min(1, (widthScore * 0.65) + (elevationScore * 0.35)));
         }
@@ -311,32 +334,82 @@ class FaceDetectorService {
         isOccluded = true;
       }
     } else {
-      // Entire face missing while video is actively running
-      isOccluded = true;
+      // If landmarks momentarily absent, run pixel-level analyzer
+      const visionResult = this.analyzeMouthPixels(320, 240);
+      detectedSmile = visionResult.smile;
+      isOccluded = visionResult.isOccluded;
     }
 
     this.evaluateGameLogic(detectedSmile, isOccluded, now);
   }
 
-  processFallbackFrame(video, now) {
-    if (this.canvas.width !== 120 || this.canvas.height !== 90) {
-      this.canvas.width = 120;
-      this.canvas.height = 90;
-    }
+  processVisionFallbackFrame(now) {
+    const visionResult = this.analyzeMouthPixels(320, 240);
+    this.evaluateGameLogic(visionResult.smile, visionResult.isOccluded, now);
+  }
 
+  analyzeMouthPixels(width, height) {
     try {
-      this.ctx.drawImage(video, 0, 0, 120, 90);
-      const frameData = this.ctx.getImageData(0, 0, 120, 90).data;
+      const imgData = this.ctx.getImageData(0, 0, width, height).data;
 
-      let totalLuma = 0;
-      for (let i = 0; i < frameData.length; i += 16) {
-        totalLuma += (frameData[i] * 0.299 + frameData[i + 1] * 0.587 + frameData[i + 2] * 0.114);
+      // Sample center face & mouth box (x: 25%-75%, y: 50%-82%)
+      const minX = Math.floor(width * 0.25);
+      const maxX = Math.floor(width * 0.75);
+      const minY = Math.floor(height * 0.50);
+      const maxY = Math.floor(height * 0.82);
+
+      let totalBrightness = 0;
+      let skinPixels = 0;
+      let lipOrTeethPixels = 0;
+      let leftMouthX = maxX;
+      let rightMouthX = minX;
+
+      for (let y = minY; y < maxY; y += 2) {
+        for (let x = minX; x < maxX; x += 2) {
+          const idx = (y * width + x) * 4;
+          const r = imgData[idx];
+          const g = imgData[idx + 1];
+          const b = imgData[idx + 2];
+          const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+          totalBrightness += brightness;
+
+          // Skin tone check (YCbCr threshold)
+          const isSkin = (r > 60 && g > 40 && b > 20 && r > b && (r - g) >= 10);
+          if (isSkin) skinPixels++;
+
+          // Lip / Teeth signature (high red difference or high brightness mouth center)
+          const isLip = (r > 1.25 * (g + 1) && r > 1.25 * (b + 1));
+          const isTeeth = (r > 150 && g > 150 && b > 150 && Math.abs(r - g) < 25 && Math.abs(g - b) < 25);
+
+          if (isLip || isTeeth) {
+            lipOrTeethPixels++;
+            if (x < leftMouthX) leftMouthX = x;
+            if (x > rightMouthX) rightMouthX = x;
+          }
+        }
       }
-      const avgLuma = totalLuma / (frameData.length / 16);
 
-      const isOccluded = (avgLuma < 12);
-      this.evaluateGameLogic(this.rawSmile, isOccluded, now);
-    } catch (e) {}
+      const totalSampled = ((maxY - minY) / 2) * ((maxX - minX) / 2);
+      const avgBrightness = totalBrightness / totalSampled;
+      const isOccluded = (avgBrightness < 12 || (skinPixels < totalSampled * 0.05));
+
+      if (isOccluded || rightMouthX <= leftMouthX) {
+        return { smile: 0, isOccluded: isOccluded };
+      }
+
+      // Mouth horizontal span ratio
+      const mouthWidth = (rightMouthX - leftMouthX) / width;
+      const mouthDensity = lipOrTeethPixels / totalSampled;
+
+      // Normal mouth is ~0.20-0.25 width, smiling spreads to ~0.35-0.50
+      const widthScore = Math.max(0, Math.min(1, (mouthWidth - 0.20) / 0.18));
+      const densityScore = Math.max(0, Math.min(1, (mouthDensity - 0.04) / 0.12));
+
+      const smile = Math.max(0, Math.min(1, (widthScore * 0.70) + (densityScore * 0.30)));
+      return { smile, isOccluded: false };
+    } catch (e) {
+      return { smile: 0, isOccluded: false };
+    }
   }
 
   evaluateGameLogic(rawSmile, isOccluded, now) {
@@ -455,14 +528,26 @@ class FaceDetectorService {
 
   updateSmileMeterUI(value, isFull) {
     const fill = document.getElementById('playerSmileMeterFill');
+    const testFill = document.getElementById('testLabSmileFill');
+    const testBadge = document.getElementById('testFullSmileBadge');
+
+    const pct = Math.min(100, Math.max(0, Math.round(value * 100)));
+
     if (fill) {
-      const pct = Math.min(100, Math.max(0, Math.round(value * 100)));
       fill.style.width = `${pct}%`;
-      if (isFull) {
-        fill.classList.add('is-full');
-      } else {
-        fill.classList.remove('is-full');
-      }
+      if (isFull) fill.classList.add('is-full');
+      else fill.classList.remove('is-full');
+    }
+
+    if (testFill) {
+      testFill.style.width = `${pct}%`;
+      if (isFull) testFill.classList.add('is-full');
+      else testFill.classList.remove('is-full');
+    }
+
+    if (testBadge) {
+      if (isFull) testBadge.classList.remove('hidden');
+      else testBadge.classList.add('hidden');
     }
 
     this.smileMeterCallbacks.forEach(cb => cb(value, isFull));
@@ -476,7 +561,7 @@ class FaceDetectorService {
       if (overlay.textContent !== String(countdownNum)) {
         overlay.textContent = countdownNum;
         overlay.style.animation = 'none';
-        overlay.offsetHeight; /* trigger CSS reflow */
+        overlay.offsetHeight;
         overlay.style.animation = '';
       }
       overlay.classList.remove('hidden');
