@@ -160,6 +160,7 @@ class FaceDetectorService {
     this.smoothedSmile = 0;
     this.rawSmile = 0;
     this.updateSmileMeterUI(0, false);
+    this.updateCountdownUI(5, false);
   }
 
   onSmileUpdate(cb) {
@@ -345,11 +346,12 @@ class FaceDetectorService {
     if (!this.battleActive || this.hasLost) {
       this.fullSmileStartTime = null;
       this.faceCoveredStartTime = null;
+      this.updateCountdownUI(5, false);
       return;
     }
 
     // ----------------------------------------------------
-    // RULE 1: FULL SMILE 5-SECOND LOSE TIMER
+    // RULE 1: FULL SMILE 5-SECOND LOSE TIMER & 5..1 COUNTDOWN
     // ----------------------------------------------------
     if (isFullSmile) {
       if (this.fullSmileStartTime === null) {
@@ -357,17 +359,24 @@ class FaceDetectorService {
       }
 
       const elapsedSmileTime = now - this.fullSmileStartTime;
+      const remainingMs = this.LOSE_DURATION - elapsedSmileTime;
+      const countdownNumber = Math.max(1, Math.ceil(remainingMs / 1000));
+
+      this.updateCountdownUI(countdownNumber, true);
+
       if (elapsedSmileTime >= this.LOSE_DURATION) {
+        this.updateCountdownUI(5, false);
         this.triggerLose("smile");
         return;
       }
     } else {
-      // Any drop below full resets smile timer immediately
+      // Any drop below full resets smile timer immediately and hides countdown
       this.fullSmileStartTime = null;
+      this.updateCountdownUI(5, false);
     }
 
     // ----------------------------------------------------
-    // RULE 2: FACE / MOUTH COVERING 5-SECOND LOSE TIMER
+    // RULE 2: FACE / MOUTH COVERING 5-SECOND LOSE TIMER (Internal only)
     // ----------------------------------------------------
     if (this.isFaceCovered) {
       if (this.faceCoveredStartTime === null) {
@@ -400,6 +409,23 @@ class FaceDetectorService {
     this.smileMeterCallbacks.forEach(cb => cb(value, isFull));
   }
 
+  updateCountdownUI(countdownNum, show) {
+    const overlay = document.getElementById('smileCountdownOverlay');
+    if (!overlay) return;
+
+    if (show && countdownNum > 0) {
+      if (overlay.textContent !== String(countdownNum)) {
+        overlay.textContent = countdownNum;
+        overlay.style.animation = 'none';
+        overlay.offsetHeight; /* trigger CSS reflow */
+        overlay.style.animation = '';
+      }
+      overlay.classList.remove('hidden');
+    } else {
+      overlay.classList.add('hidden');
+    }
+  }
+
   triggerLose(reason) {
     if (this.hasLost || !this.battleActive) return;
     this.hasLost = true;
@@ -409,6 +435,7 @@ class FaceDetectorService {
 
     this.fullSmileStartTime = null;
     this.faceCoveredStartTime = null;
+    this.updateCountdownUI(5, false);
 
     this.loseCallbacks.forEach(cb => cb(reason));
   }
