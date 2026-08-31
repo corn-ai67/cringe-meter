@@ -270,24 +270,31 @@ document.addEventListener('DOMContentLoaded', () => {
     onPlayerUpdated: (stats) => updatePlayerHUD(stats),
     onBattleTick: (timeLeft, cringeLevel) => {
       const secs = timeLeft < 10 ? `0${timeLeft}` : `${timeLeft}`;
-      battleTimerDigits.textContent = `00:${secs}`;
-      cringeGaugeFill.style.width = `${cringeLevel}%`;
+      if (battleTimerDigits) battleTimerDigits.textContent = `00:${secs}`;
+      if (cringeGaugeFill) cringeGaugeFill.style.width = `${cringeLevel}%`;
 
-      if (cringeLevel > 75) {
-        gaugeStatusText.textContent = "CRINGE LEVEL: CRITICAL 💀";
-        gaugeStatusText.style.color = "var(--accent-magenta)";
-        oppFaceEmoji.textContent = "😬";
-        oppReactionSub.textContent = "Sweating & Holding Back...";
-      } else if (cringeLevel > 45) {
-        gaugeStatusText.textContent = "CRINGE DETECTED";
-        gaugeStatusText.style.color = "var(--accent-gold)";
-        oppFaceEmoji.textContent = "😏";
-        oppReactionSub.textContent = "Smirking Detected!";
-      } else {
-        gaugeStatusText.textContent = "CRINGE DETECTED";
-        gaugeStatusText.style.color = "var(--accent-cyan)";
-        oppFaceEmoji.textContent = "😐";
-        oppReactionSub.textContent = "Poker Face Active...";
+      if (gaugeStatusText) {
+        if (cringeLevel > 75) {
+          gaugeStatusText.textContent = "CRINGE LEVEL: CRITICAL 💀";
+          gaugeStatusText.style.color = "var(--accent-magenta)";
+        } else if (cringeLevel > 45) {
+          gaugeStatusText.textContent = "CRINGE DETECTED";
+          gaugeStatusText.style.color = "var(--accent-gold)";
+        } else {
+          gaugeStatusText.textContent = "CRINGE DETECTED";
+          gaugeStatusText.style.color = "var(--accent-cyan)";
+        }
+      }
+
+      if (oppFaceEmoji) {
+        if (cringeLevel > 75) oppFaceEmoji.textContent = "😬";
+        else if (cringeLevel > 45) oppFaceEmoji.textContent = "😏";
+        else oppFaceEmoji.textContent = "😐";
+      }
+      if (oppReactionSub) {
+        if (cringeLevel > 75) oppReactionSub.textContent = "Sweating & Holding Back...";
+        else if (cringeLevel > 45) oppReactionSub.textContent = "Smirking Detected!";
+        else oppReactionSub.textContent = "Poker Face Active...";
       }
     },
     onMatchEnd: (results, updatedPlayer) => {
