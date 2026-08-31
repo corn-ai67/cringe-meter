@@ -227,27 +227,54 @@ class LiveKitClientEngine {
   disconnect() {
     if (this.room) {
       try {
+        if (this.room.localParticipant) {
+          try {
+            this.room.localParticipant.setMicrophoneEnabled(false);
+            this.room.localParticipant.setCameraEnabled(false);
+          } catch (e) {}
+
+          if (this.room.localParticipant.trackPublications) {
+            this.room.localParticipant.trackPublications.forEach(pub => {
+              try {
+                if (pub.track) {
+                  pub.track.stop();
+                }
+              } catch (e) {}
+            });
+          }
+        }
         this.room.disconnect();
       } catch (e) {}
       this.room = null;
     }
+
     if (this.localStream) {
-      this.localStream.getTracks().forEach(t => t.stop());
+      try {
+        this.localStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
       this.localStream = null;
     }
 
-    const simulated = document.getElementById('simulatedOppVideo');
+    const localVideoEl = document.getElementById('localVideoFeed');
+    if (localVideoEl && localVideoEl.srcObject) {
+      try {
+        localVideoEl.srcObject.getTracks().forEach(t => t.stop());
+        localVideoEl.srcObject = null;
+      } catch (e) {}
+    }
+
     const oppPlaceholder = document.getElementById('oppCameraOffPlaceholder');
     const remoteVideoEl = document.getElementById('remoteVideoFeed');
 
     if (remoteVideoEl) {
       remoteVideoEl.classList.add('hidden');
       remoteVideoEl.style.display = 'none';
-      remoteVideoEl.srcObject = null;
-    }
-    if (simulated) {
-      simulated.classList.remove('hidden');
-      simulated.style.display = 'flex';
+      if (remoteVideoEl.srcObject) {
+        try {
+          remoteVideoEl.srcObject.getTracks().forEach(t => t.stop());
+          remoteVideoEl.srcObject = null;
+        } catch (e) {}
+      }
     }
     if (oppPlaceholder) {
       oppPlaceholder.classList.add('hidden');

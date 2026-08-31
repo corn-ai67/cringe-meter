@@ -127,8 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('app-entered');
     }
 
-    if (viewId !== 'view-battle' && faceSensor) {
-      faceSensor.setBattleActive(false);
+    if (viewId !== 'view-battle') {
+      if (faceSensor) faceSensor.setBattleActive(false);
+      if (viewId !== 'view-matchmaking') {
+        if (window.livekitClientEngine) window.livekitClientEngine.disconnect();
+        if (window.onlineBattleController && window.onlineBattleController.livekit) {
+          window.onlineBattleController.livekit.disconnect();
+        }
+      }
     }
 
     views.forEach(view => {
@@ -301,6 +307,14 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePlayerHUD(updatedPlayer);
       faceSensor.setBattleActive(false);
       faceSensor.stopCamera();
+
+      // Disconnect LiveKit audio/mic tracks immediately
+      if (window.livekitClientEngine) {
+        window.livekitClientEngine.disconnect();
+      }
+      if (window.onlineBattleController && window.onlineBattleController.livekit) {
+        window.onlineBattleController.livekit.disconnect();
+      }
 
       resultTitle.textContent = results.title;
       resultTagline.textContent = `"${results.subtitle}"`;

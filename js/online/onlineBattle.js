@@ -330,6 +330,9 @@ class OnlineBattleController {
     const selfUserId = window.onlineState ? window.onlineState.internalUserId : '';
     const isWinner = (data.winnerUserId === selfUserId);
 
+    // Immediately stop microphone & camera media tracks
+    this.livekit.disconnect();
+
     if (window.gameEngine) {
       const results = {
         isWinner,
