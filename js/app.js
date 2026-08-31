@@ -632,24 +632,104 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   const smileTestModal = document.getElementById('smileTestModal');
   const btnCloseSmileTestModal = document.getElementById('btnCloseSmileTestModal');
+  const btnCloseSmileTestModalBtn = document.getElementById('btnCloseSmileTestModalBtn');
   const btnHomeOpenSmileTest = document.getElementById('btnHomeOpenSmileTest');
   const btnFloatingTestSmile = document.getElementById('btnFloatingTestSmile');
   const testLabVideoFeed = document.getElementById('testLabVideoFeed');
   const testLabCamFallback = document.getElementById('testLabCamFallback');
+  const testLabCamFallbackText = document.getElementById('testLabCamFallbackText');
+  const btnRetryCamAccess = document.getElementById('btnRetryCamAccess');
   const testLabSmileFill = document.getElementById('testLabSmileFill');
+  const testFullSmileBadge = document.getElementById('testFullSmileBadge');
   const testLabCountdownOverlay = document.getElementById('testLabCountdownOverlay');
-  const testLabSmileVal = document.getElementById('testLabSmileVal');
-  const testLabStatusVal = document.getElementById('testLabStatusVal');
-  const btnLabTestSmile50 = document.getElementById('btnLabTestSmile50');
-  const btnLabTestSmile100 = document.getElementById('btnLabTestSmile100');
-  const btnLabTestReset = document.getElementById('btnLabTestReset');
+  const testLabSuccessOverlay = document.getElementById('testLabSuccessOverlay');
+  const testLabInstructionText = document.getElementById('testLabInstructionText');
 
   function openSmileTestLab() {
     sound.playClick();
     if (smileTestModal) smileTestModal.classList.remove('hidden');
+
+    // Reset test UI elements
+    if (testLabCountdownOverlay) testLabCountdownOverlay.classList.add('hidden');
+    if (testLabSuccessOverlay) testLabSuccessOverlay.classList.add('hidden');
+    if (testFullSmileBadge) testFullSmileBadge.classList.add('hidden');
+    if (testLabSmileFill) {
+      testLabSmileFill.style.width = '0%';
+      testLabSmileFill.classList.remove('is-full');
+    }
+    if (testLabInstructionText) testLabInstructionText.textContent = "Try smiling to fill the meter.";
+    if (testLabCamFallback) {
+      testLabCamFallback.classList.remove('hidden');
+      testLabCamFallback.style.display = 'flex';
+    }
+    if (testLabCamFallbackText) testLabCamFallbackText.textContent = "Starting camera...";
+    if (btnRetryCamAccess) btnRetryCamAccess.classList.add('hidden');
+
     if (faceSensor && testLabVideoFeed) {
-      faceSensor.startCamera(testLabVideoFeed);
-      faceSensor.setBattleActive(true);
+      // Activate Test Mode on shared detector
+      faceSensor.setTestModeActive(true, {
+        onSmileUpdate: (smoothed, normalized, isFull) => {
+          const pct = Math.round(normalized * 100);
+          if (testLabSmileFill) {
+            testLabSmileFill.style.width = `${pct}%`;
+            if (isFull) testLabSmileFill.classList.add('is-full');
+            else testLabSmileFill.classList.remove('is-full');
+          }
+          if (testFullSmileBadge) {
+            if (isFull) testFullSmileBadge.classList.remove('hidden');
+            else testFullSmileBadge.classList.add('hidden');
+          }
+        },
+        onCountdownUpdate: (countdownNum, showCountdown, isSuccess) => {
+          if (isSuccess) {
+            if (testLabCountdownOverlay) testLabCountdownOverlay.classList.add('hidden');
+            if (testLabSuccessOverlay) testLabSuccessOverlay.classList.remove('hidden');
+            if (testLabInstructionText) testLabInstructionText.textContent = "FULL SMILE DETECTED! (Test mode — no stats modified)";
+          } else if (showCountdown && countdownNum > 0) {
+            if (testLabSuccessOverlay) testLabSuccessOverlay.classList.add('hidden');
+            if (testLabCountdownOverlay) {
+              if (testLabCountdownOverlay.textContent !== String(countdownNum)) {
+                testLabCountdownOverlay.textContent = countdownNum;
+                testLabCountdownOverlay.style.animation = 'none';
+                testLabCountdownOverlay.offsetHeight;
+                testLabCountdownOverlay.style.animation = '';
+              }
+              testLabCountdownOverlay.classList.remove('hidden');
+            }
+            if (testLabInstructionText) testLabInstructionText.textContent = "Full smile reached! Holding countdown...";
+          } else {
+            if (testLabCountdownOverlay) testLabCountdownOverlay.classList.add('hidden');
+            if (testLabSuccessOverlay) testLabSuccessOverlay.classList.add('hidden');
+            if (testLabInstructionText) testLabInstructionText.textContent = "Try smiling to fill the meter.";
+          }
+        }
+      });
+
+      // Start local camera stream
+      faceSensor.startCamera(testLabVideoFeed).then(res => {
+        if (!res.success) {
+          if (testLabCamFallback) {
+            testLabCamFallback.classList.remove('hidden');
+            testLabCamFallback.style.display = 'flex';
+          }
+          if (testLabCamFallbackText) {
+            testLabCamFallbackText.textContent = "Camera access is required to test smile detection.";
+          }
+          if (btnRetryCamAccess) btnRetryCamAccess.classList.remove('hidden');
+        } else {
+          if (testLabCamFallback) {
+            testLabCamFallback.classList.add('hidden');
+            testLabCamFallback.style.display = 'none';
+          }
+          if (faceSensor.faceMeshInitError && testLabCamFallbackText) {
+            testLabCamFallbackText.textContent = "Smile detector could not start. Please try again.";
+            if (testLabCamFallback) {
+              testLabCamFallback.classList.remove('hidden');
+              testLabCamFallback.style.display = 'flex';
+            }
+          }
+        }
+      });
     }
   }
 
@@ -657,83 +737,23 @@ document.addEventListener('DOMContentLoaded', () => {
     sound.playClick();
     if (smileTestModal) smileTestModal.classList.add('hidden');
     if (faceSensor) {
+      faceSensor.setTestModeActive(false);
       faceSensor.stopCamera();
-      faceSensor.setBattleActive(false);
-      faceSensor.simulateSmile(0.0);
     }
     if (testLabCountdownOverlay) testLabCountdownOverlay.classList.add('hidden');
+    if (testLabSuccessOverlay) testLabSuccessOverlay.classList.add('hidden');
+    if (testFullSmileBadge) testFullSmileBadge.classList.add('hidden');
   }
 
   if (btnHomeOpenSmileTest) btnHomeOpenSmileTest.addEventListener('click', openSmileTestLab);
   if (btnFloatingTestSmile) btnFloatingTestSmile.addEventListener('click', openSmileTestLab);
   if (btnCloseSmileTestModal) btnCloseSmileTestModal.addEventListener('click', closeSmileTestLab);
+  if (btnCloseSmileTestModalBtn) btnCloseSmileTestModalBtn.addEventListener('click', closeSmileTestLab);
+  if (btnRetryCamAccess) btnRetryCamAccess.addEventListener('click', openSmileTestLab);
 
   if (smileTestModal) {
     smileTestModal.addEventListener('click', (e) => {
       if (e.target === smileTestModal) closeSmileTestLab();
-    });
-  }
-
-  // Sync Live Lab Smile Meter & Countdown
-  if (faceSensor) {
-    faceSensor.onSmileMeterUpdate((val, isFull) => {
-      const pct = Math.round(val * 100);
-      if (testLabSmileFill) {
-        testLabSmileFill.style.width = `${pct}%`;
-        if (isFull) testLabSmileFill.classList.add('is-full');
-        else testLabSmileFill.classList.remove('is-full');
-      }
-      if (testLabSmileVal) {
-        testLabSmileVal.textContent = isFull ? `${pct}% (FULL BAR)` : `${pct}%`;
-        testLabSmileVal.style.color = isFull ? "var(--accent-magenta)" : (pct > 40 ? "var(--accent-gold)" : "var(--accent-green)");
-      }
-      if (testLabStatusVal) {
-        if (isFull) {
-          testLabStatusVal.textContent = "🔥 FULL SMILE — 5S COUNTDOWN!";
-          testLabStatusVal.style.color = "var(--accent-magenta)";
-        } else if (pct > 40) {
-          testLabStatusVal.textContent = "SMILING DETECTED (METER RISING)";
-          testLabStatusVal.style.color = "var(--accent-gold)";
-        } else {
-          testLabStatusVal.textContent = "POKER FACE (SAFE)";
-          testLabStatusVal.style.color = "var(--accent-green)";
-        }
-      }
-    });
-
-    // Also mirror countdown to lab overlay
-    const originalCountdownEl = document.getElementById('smileCountdownOverlay');
-    if (originalCountdownEl && testLabCountdownOverlay) {
-      const observer = new MutationObserver(() => {
-        testLabCountdownOverlay.textContent = originalCountdownEl.textContent;
-        if (originalCountdownEl.classList.contains('hidden')) {
-          testLabCountdownOverlay.classList.add('hidden');
-        } else {
-          testLabCountdownOverlay.classList.remove('hidden');
-        }
-      });
-      observer.observe(originalCountdownEl, { attributes: true, childList: true, characterData: true, subtree: true });
-    }
-  }
-
-  if (btnLabTestSmile50) {
-    btnLabTestSmile50.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(0.50);
-    });
-  }
-
-  if (btnLabTestSmile100) {
-    btnLabTestSmile100.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(1.0);
-    });
-  }
-
-  if (btnLabTestReset) {
-    btnLabTestReset.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(0.0);
     });
   }
 

@@ -853,7 +853,7 @@ html, body {
 
 /* Smile Test Lab Modal Card */
 .smile-test-modal-card {
-  max-width: 580px;
+  max-width: 520px;
   width: 92%;
   background: rgba(14, 16, 26, 0.98);
   border: 1.5px solid var(--accent-cyan);
@@ -872,7 +872,7 @@ html, body {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  max-height: 320px;
+  max-height: 300px;
   background: #000;
   border-radius: var(--radius-md);
   border: 2px solid var(--bg-card-border);
@@ -893,70 +893,117 @@ html, body {
   border-radius: inherit;
 }
 
-.test-smile-container {
+/* Centered Countdown Overlay over Test Camera */
+.test-cam-countdown {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 20;
-  padding: 8px 12px;
-  background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  font-size: 6.5rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  text-shadow: 0 0 25px rgba(255, 0, 85, 0.95), 0 0 50px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+  line-height: 1;
 }
 
-.test-metrics-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.test-metric-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--bg-card-border);
+.test-success-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  background: rgba(12, 14, 22, 0.9);
+  border: 2px solid var(--accent-green);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
+  padding: 12px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 30px rgba(0, 255, 170, 0.4);
+  animation: successPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
-.test-metric-card .metric-title {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--text-muted);
+@keyframes successPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.test-success-icon {
+  font-size: 1.5rem;
+}
+.test-success-text {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--accent-green);
   letter-spacing: 0.5px;
 }
 
-.test-metric-card .metric-val {
+/* Test Smile Meter */
+.test-smile-meter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.test-meter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.test-meter-title {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
+  font-size: 0.78rem;
   font-weight: 900;
-  color: var(--accent-cyan);
+  color: var(--text-secondary);
+  letter-spacing: 0.8px;
+}
+.test-full-smile-badge {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #FFF;
+  background: var(--accent-magenta);
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 10px var(--accent-magenta-glow);
+  animation: fullSmilePulse 1s infinite alternate ease-in-out;
+}
+@keyframes fullSmilePulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.06); opacity: 1; box-shadow: 0 0 14px var(--accent-magenta-glow); }
+}
+
+.test-meter-bar-wrap {
+  width: 100%;
+}
+.test-meter-bar-wrap .player-smile-meter-track {
+  height: 12px;
+  border-radius: var(--radius-full);
 }
 
 .test-instructions {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--text-secondary);
-  line-height: 1.4;
   text-align: center;
-  background: rgba(0, 240, 255, 0.05);
-  border: 1px dashed rgba(0, 240, 255, 0.25);
-  border-radius: var(--radius-sm);
-  padding: 10px;
+  margin: 2px 0;
 }
 
-.test-sim-row {
+.test-actions-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   justify-content: center;
+  margin-top: 4px;
 }
-
-.btn-lab-full {
-  background: linear-gradient(135deg, var(--accent-magenta), #B000FF);
-  border-color: var(--accent-magenta);
+.btn-close-test-lg {
+  min-width: 140px;
+  padding: 8px 24px;
+  font-weight: 800;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--bg-card-border);
 }
-.btn-lab-full:hover {
-  box-shadow: 0 0 15px var(--accent-magenta-glow);
+.btn-close-test-lg:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFF;
 }
 .local-cam-feed, .remote-cam-feed {
   position: absolute;

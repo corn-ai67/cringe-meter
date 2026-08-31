@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body class="mobile-wrapper-body">
 
@@ -1206,53 +1206,54 @@
     <div class="modal-card smile-test-modal-card">
       <div class="modal-header">
         <div class="modal-header-title">
-          <span class="badge neon-badge-sm">🧪 TEST LAB</span>
-          <h3>CAMERA & SMILE DETECTOR TEST</h3>
+          <span class="badge neon-badge-sm">🧪 TEST MODE</span>
+          <h3>TEST CAMERA &amp; SMILE DETECTION</h3>
         </div>
-        <button class="btn-close-modal" id="btnCloseSmileTestModal"><i data-lucide="x"></i></button>
+        <button class="btn-close-modal" id="btnCloseSmileTestModal" title="Close"><i data-lucide="x"></i></button>
       </div>
 
       <div class="smile-test-body">
         <!-- Live Test Camera Box -->
-        <div class="test-video-container">
+        <div class="test-video-container" id="testVideoContainer">
           <video id="testLabVideoFeed" autoplay playsinline webkit-playsinline muted class="test-lab-cam-feed"></video>
+          
+          <!-- Camera Fallback / Error Box -->
           <div class="cam-fallback" id="testLabCamFallback">
             <span class="cam-fallback-avatar">📸</span>
-            <span class="cam-fallback-text" id="testLabCamFallbackText">STARTING WEBCAM...</span>
+            <span class="cam-fallback-text" id="testLabCamFallbackText">Starting camera...</span>
+            <button class="btn-xs btn-primary hidden" id="btnRetryCamAccess" style="margin-top:8px;">Retry Camera</button>
           </div>
-          
-          <!-- Horizontal Smile Meter directly under camera -->
-          <div class="player-smile-meter-container test-smile-container">
+
+          <!-- Big Centered Countdown in Camera Preview -->
+          <div class="smile-countdown-overlay test-cam-countdown hidden" id="testLabCountdownOverlay">5</div>
+
+          <!-- Full Smile Detected Success Badge -->
+          <div class="test-success-overlay hidden" id="testLabSuccessOverlay">
+            <span class="test-success-icon">✨</span>
+            <span class="test-success-text">FULL SMILE DETECTED</span>
+          </div>
+        </div>
+
+        <!-- Smile Detection Meter -->
+        <div class="test-smile-meter-section">
+          <div class="test-meter-header">
+            <span class="test-meter-title">SMILE DETECTION</span>
+            <span class="test-full-smile-badge hidden" id="testFullSmileBadge">FULL SMILE</span>
+          </div>
+          <div class="player-smile-meter-container test-meter-bar-wrap">
             <div class="player-smile-meter-track">
               <div class="player-smile-meter-fill" id="testLabSmileFill"></div>
             </div>
           </div>
-
-          <!-- Big Centered Countdown in Test Camera -->
-          <div class="smile-countdown-overlay hidden" id="testLabCountdownOverlay">5</div>
         </div>
 
-        <!-- Real-Time Metrics -->
-        <div class="test-metrics-row">
-          <div class="test-metric-card">
-            <span class="metric-title">LIVE SMILE STRENGTH</span>
-            <span class="metric-val" id="testLabSmileVal">0%</span>
-          </div>
-          <div class="test-metric-card">
-            <span class="metric-title">COUNTDOWN STATUS</span>
-            <span class="metric-val" id="testLabStatusVal">POKER FACE (SAFE)</span>
-          </div>
-        </div>
-
-        <p class="test-instructions">
-          😃 <strong>Smile into your webcam</strong> to watch the meter fill up. When you smile at <strong>FULL BAR</strong>, the large <strong>5 → 4 → 3 → 2 → 1</strong> countdown triggers!
+        <p class="test-instructions" id="testLabInstructionText">
+          Try smiling to fill the meter.
         </p>
 
-        <!-- Simulation Buttons -->
-        <div class="test-sim-row">
-          <button class="btn-sm btn-ghost" id="btnLabTestSmile50">😊 Simulate 50% Smile</button>
-          <button class="btn-sm btn-ghost" id="btnLabTestReset">😐 Reset</button>
-          <button class="btn-sm btn-primary btn-lab-full" id="btnLabTestSmile100">😁 Simulate Full Smile (5s Countdown)</button>
+        <!-- Test Modal Actions -->
+        <div class="test-actions-row">
+          <button class="btn-ghost btn-close-test-lg" id="btnCloseSmileTestModalBtn">CLOSE</button>
         </div>
       </div>
     </div>
@@ -1264,25 +1265,25 @@
   </button>
 
   <!-- App Script Modules -->
-  <script src="js/audio.js?v=7"></script>
-  <script src="js/i18n.js?v=7"></script>
-  <script src="js/cringePrompts.js?v=7"></script>
-  <script src="js/faceDetector.js?v=7"></script>
-  <script src="js/gameModes/baseMode.js?v=7"></script>
-  <script src="js/gameModes/dontLaugh.js?v=7"></script>
-  <script src="js/gameModes/staringContest.js?v=7"></script>
-  <script src="js/gameModes/coopDuo.js?v=7"></script>
-  <script src="js/subscriptionService.js?v=7"></script>
-  <script src="js/services/progressionService.js?v=7"></script>
-  <script src="js/services/userService.js?v=7"></script>
-  <script src="js/gameEngine.js?v=7"></script>
-  <script src="js/online/onlineState.js?v=7"></script>
-  <script src="js/online/matchmaking.js?v=7"></script>
-  <script src="js/online/livekitClient.js?v=7"></script>
-  <script src="js/online/reactionAnalyzer.js?v=7"></script>
-  <script src="js/online/onlineBattle.js?v=7"></script>
-  <script src="js/pcControls.js?v=7"></script>
-  <script src="js/services/leaderboardService.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/audio.js?v=8"></script>
+  <script src="js/i18n.js?v=8"></script>
+  <script src="js/cringePrompts.js?v=8"></script>
+  <script src="js/faceDetector.js?v=8"></script>
+  <script src="js/gameModes/baseMode.js?v=8"></script>
+  <script src="js/gameModes/dontLaugh.js?v=8"></script>
+  <script src="js/gameModes/staringContest.js?v=8"></script>
+  <script src="js/gameModes/coopDuo.js?v=8"></script>
+  <script src="js/subscriptionService.js?v=8"></script>
+  <script src="js/services/progressionService.js?v=8"></script>
+  <script src="js/services/userService.js?v=8"></script>
+  <script src="js/gameEngine.js?v=8"></script>
+  <script src="js/online/onlineState.js?v=8"></script>
+  <script src="js/online/matchmaking.js?v=8"></script>
+  <script src="js/online/livekitClient.js?v=8"></script>
+  <script src="js/online/reactionAnalyzer.js?v=8"></script>
+  <script src="js/online/onlineBattle.js?v=8"></script>
+  <script src="js/pcControls.js?v=8"></script>
+  <script src="js/services/leaderboardService.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

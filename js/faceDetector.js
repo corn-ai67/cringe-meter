@@ -16,6 +16,7 @@ class FaceDetectorService {
     this.isFaceMeshReady = false;
     this.isInitializing = false;
     this.isProcessingFrame = false;
+    this.faceMeshInitError = null;
 
     // Smile tracking & smoothing
     this.rawSmile = 0;
@@ -35,6 +36,10 @@ class FaceDetectorService {
     // Battle state & single-trigger protection
     this.battleActive = false;
     this.hasLost = false;
+
+    // Test Mode state
+    this.testModeActive = false;
+    this.testCallbacks = {};
 
     // Callbacks
     this.smileCallbacks = [];
@@ -72,10 +77,12 @@ class FaceDetectorService {
         this.faceMesh.onResults((results) => this.handleFaceMeshResults(results));
         this.isFaceMeshReady = true;
         this.isInitializing = false;
+        this.faceMeshInitError = null;
         console.log("[FACEDETECTOR] MediaPipe FaceMesh initialized successfully.");
       } catch (err) {
         console.warn("[FACEDETECTOR] MediaPipe FaceMesh init error:", err);
         this.isInitializing = false;
+        this.faceMeshInitError = err;
       }
     } else {
       // Retry in 500ms if script is still downloading
@@ -84,6 +91,7 @@ class FaceDetectorService {
   }
 
   async startCamera(videoElement) {
+    this.stopDetectionLoop();
     this.active = true;
     this.videoElement = videoElement || document.getElementById('localVideoFeed');
 
@@ -115,11 +123,13 @@ class FaceDetectorService {
           } catch (e) {}
         }
       }
+      this.startDetectionLoop();
+      return { success: true };
     } catch (e) {
-      console.warn("[FACEDETECTOR] Local camera fallback active:", e);
+      console.warn("[FACEDETECTOR] Camera access error:", e);
+      this.active = false;
+      return { success: false, error: e };
     }
-
-    this.startDetectionLoop();
   }
 
   attachVideoElement(videoElement) {
@@ -143,10 +153,23 @@ class FaceDetectorService {
 
   setBattleActive(active) {
     this.battleActive = !!active;
-    if (!this.battleActive) {
+    if (this.battleActive) {
+      this.testModeActive = false;
+      this.hasLost = false;
       this.resetTimers();
     } else {
+      this.resetTimers();
+    }
+  }
+
+  setTestModeActive(active, callbacks = {}) {
+    this.testModeActive = !!active;
+    this.testCallbacks = callbacks || {};
+    if (this.testModeActive) {
+      this.battleActive = false;
       this.hasLost = false;
+      this.resetTimers();
+    } else {
       this.resetTimers();
     }
   }
@@ -193,7 +216,10 @@ class FaceDetectorService {
   }
 
   startDetectionLoop() {
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
 
     const loop = (now) => {
       if (!this.active) return;
@@ -219,7 +245,7 @@ class FaceDetectorService {
 
   async processCurrentFrame(now) {
     const video = this.videoElement || document.getElementById('localVideoFeed');
-    if (!video || video.readyState < 2 || video.paused || video.ended) {
+    if (!video || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0 || video.paused || video.ended) {
       return;
     }
 
@@ -228,12 +254,12 @@ class FaceDetectorService {
       try {
         await this.faceMesh.send({ image: video });
       } catch (e) {
-        // Ignored, frame dropped gracefully
+        // Frame dropped gracefully
       } finally {
         this.isProcessingFrame = false;
       }
     } else if (!this.isFaceMeshReady) {
-      // Fallback heuristics while model loads
+      // Fallback analyzer while model loads
       this.processFallbackFrame(video, now);
     }
   }
@@ -293,7 +319,6 @@ class FaceDetectorService {
   }
 
   processFallbackFrame(video, now) {
-    // Simple fallback analyzer if MediaPipe is unavailable
     if (this.canvas.width !== 120 || this.canvas.height !== 90) {
       this.canvas.width = 120;
       this.canvas.height = 90;
@@ -303,14 +328,12 @@ class FaceDetectorService {
       this.ctx.drawImage(video, 0, 0, 120, 90);
       const frameData = this.ctx.getImageData(0, 0, 120, 90).data;
 
-      // Sample center luminance
       let totalLuma = 0;
       for (let i = 0; i < frameData.length; i += 16) {
         totalLuma += (frameData[i] * 0.299 + frameData[i + 1] * 0.587 + frameData[i + 2] * 0.114);
       }
       const avgLuma = totalLuma / (frameData.length / 16);
 
-      // Occluded if totally dark or blocked
       const isOccluded = (avgLuma < 12);
       this.evaluateGameLogic(this.rawSmile, isOccluded, now);
     } catch (e) {}
@@ -323,33 +346,59 @@ class FaceDetectorService {
     // Smoothing: Exponential Moving Average for Jitter-Free Meter
     // ----------------------------------------------------
     this.smoothedSmile = (this.smoothedSmile * 0.70) + (rawSmile * 0.30);
-    if (this.smoothedSmile < 0.04) this.smoothedSmile = 0;
+    if (this.smoothedSmile < 0.03) this.smoothedSmile = 0;
 
-    // ----------------------------------------------------
-    // Glitch-Immune Occlusion / Face Covering Detection
-    // ----------------------------------------------------
-    if (isOccluded) {
-      this.occludedStreak++;
-      this.visibleStreak = 0;
-    } else {
-      this.visibleStreak++;
-      this.occludedStreak = 0;
-    }
-
-    // Require 6 consecutive occluded frames (~300-400ms sustained) before considering face covered
-    this.isFaceCovered = (this.occludedStreak >= 6);
+    // Normalized 0.0 to 1.0 against FULL_SMILE_THRESHOLD
+    const normalizedSmile = Math.min(1.0, this.smoothedSmile / this.FULL_SMILE_THRESHOLD);
+    const isFullSmile = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
 
     // ----------------------------------------------------
     // SMILE METER UI UPDATE
     // ----------------------------------------------------
-    const isFullSmile = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
-    this.updateSmileMeterUI(isFullSmile ? 1.0 : this.smoothedSmile, isFullSmile);
+    this.updateSmileMeterUI(normalizedSmile, isFullSmile);
 
     // Legacy sync
     this.smileRisk = Math.round(this.smoothedSmile * 100);
     this.notifySmile();
 
-    // If battle is not active or player already lost, reset timers and stop
+    // ----------------------------------------------------
+    // TEST MODE EXECUTION PATH (NO STATS / NO BATTLE LOSS)
+    // ----------------------------------------------------
+    if (this.testModeActive) {
+      if (this.testCallbacks.onSmileUpdate) {
+        this.testCallbacks.onSmileUpdate(this.smoothedSmile, normalizedSmile, isFullSmile);
+      }
+
+      if (isFullSmile) {
+        if (this.fullSmileStartTime === null) {
+          this.fullSmileStartTime = now;
+        }
+
+        const elapsedSmileTime = now - this.fullSmileStartTime;
+        const remainingMs = this.LOSE_DURATION - elapsedSmileTime;
+        const countdownNumber = Math.max(1, Math.ceil(remainingMs / 1000));
+
+        if (elapsedSmileTime >= this.LOSE_DURATION) {
+          if (this.testCallbacks.onCountdownUpdate) {
+            this.testCallbacks.onCountdownUpdate(0, false, true); // true = success
+          }
+        } else {
+          if (this.testCallbacks.onCountdownUpdate) {
+            this.testCallbacks.onCountdownUpdate(countdownNumber, true, false);
+          }
+        }
+      } else {
+        this.fullSmileStartTime = null;
+        if (this.testCallbacks.onCountdownUpdate) {
+          this.testCallbacks.onCountdownUpdate(5, false, false);
+        }
+      }
+      return; // NEVER trigger battle loss or modify stats in test mode!
+    }
+
+    // ----------------------------------------------------
+    // REAL BATTLE EXECUTION PATH
+    // ----------------------------------------------------
     if (!this.battleActive || this.hasLost) {
       this.fullSmileStartTime = null;
       this.faceCoveredStartTime = null;
@@ -357,9 +406,7 @@ class FaceDetectorService {
       return;
     }
 
-    // ----------------------------------------------------
     // RULE 1: FULL SMILE 5-SECOND LOSE TIMER & 5..1 COUNTDOWN
-    // ----------------------------------------------------
     if (isFullSmile) {
       if (this.fullSmileStartTime === null) {
         this.fullSmileStartTime = now;
@@ -377,14 +424,20 @@ class FaceDetectorService {
         return;
       }
     } else {
-      // Any drop below full resets smile timer immediately and hides countdown
       this.fullSmileStartTime = null;
       this.updateCountdownUI(5, false);
     }
 
-    // ----------------------------------------------------
     // RULE 2: FACE / MOUTH COVERING 5-SECOND LOSE TIMER (Internal only)
-    // ----------------------------------------------------
+    if (isOccluded) {
+      this.occludedStreak++;
+      this.visibleStreak = 0;
+    } else {
+      this.visibleStreak++;
+      this.occludedStreak = 0;
+    }
+    this.isFaceCovered = (this.occludedStreak >= 6);
+
     if (this.isFaceCovered) {
       if (this.faceCoveredStartTime === null) {
         this.faceCoveredStartTime = now;
@@ -396,7 +449,6 @@ class FaceDetectorService {
         return;
       }
     } else if (this.visibleStreak >= 3) {
-      // Face clearly visible resets face-covered timer immediately
       this.faceCoveredStartTime = null;
     }
   }
