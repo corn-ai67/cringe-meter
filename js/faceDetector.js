@@ -175,10 +175,17 @@ class FaceDetectorService {
     if (typeof cb === 'function') this.loseCallbacks.push(cb);
   }
 
+  simulateSmile(targetSmile = 1.0) {
+    this.rawSmile = targetSmile;
+    this.smoothedSmile = targetSmile;
+    const now = Date.now();
+    this.evaluateGameLogic(targetSmile, false, now);
+  }
+
   triggerSpike(amount = 25) {
     this.rawSmile = Math.min(1.0, this.rawSmile + (amount / 100));
-    this.smileRisk = Math.min(100, this.smileRisk + amount);
-    this.notifySmile();
+    this.smoothedSmile = this.rawSmile;
+    this.evaluateGameLogic(this.rawSmile, false, Date.now());
   }
 
   notifySmile() {

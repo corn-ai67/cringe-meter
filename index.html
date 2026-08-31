@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body class="mobile-wrapper-body">
 
@@ -446,6 +446,33 @@
                 <span class="laughed-subtext">Tap if you broke</span>
               </div>
             </button>
+          </div>
+
+          <!-- Bottom Right: Camera & Smile Test Dock -->
+          <div class="battle-test-dock" id="battleTestDock">
+            <button class="btn-battle-test-toggle" id="btnToggleTestDock" title="Test Camera & Smile Detection">
+              <span>🧪 TEST SMILE</span>
+            </button>
+            <div class="battle-test-panel hidden" id="battleTestPanel">
+              <div class="test-panel-header">
+                <span class="test-panel-title">🧪 SMILE & CAM TEST</span>
+                <button class="btn-icon-xs" id="btnCloseTestPanel" title="Close Test Panel">✕</button>
+              </div>
+              <div class="test-panel-body">
+                <div class="test-meter-preview">
+                  <span class="test-meter-label">LIVE SMILE:</span>
+                  <span class="test-meter-val" id="testSmileVal">0%</span>
+                </div>
+                <div class="test-buttons-grid">
+                  <button class="btn-xs btn-test-action" id="btnTestSmile50">😊 50% Smile</button>
+                  <button class="btn-xs btn-test-action" id="btnTestReset">😐 Reset</button>
+                  <button class="btn-xs btn-test-action btn-test-full" id="btnTestSmile100">😁 Full Smile (5s Countdown)</button>
+                </div>
+                <div class="test-cam-status" id="testCamStatus">
+                  📹 Live Camera: Active
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1168,25 +1195,25 @@
   </div>
 
   <!-- App Script Modules -->
-  <script src="js/audio.js?v=5"></script>
-  <script src="js/i18n.js?v=5"></script>
-  <script src="js/cringePrompts.js?v=5"></script>
-  <script src="js/faceDetector.js?v=5"></script>
-  <script src="js/gameModes/baseMode.js?v=5"></script>
-  <script src="js/gameModes/dontLaugh.js?v=5"></script>
-  <script src="js/gameModes/staringContest.js?v=5"></script>
-  <script src="js/gameModes/coopDuo.js?v=5"></script>
-  <script src="js/subscriptionService.js?v=5"></script>
-  <script src="js/services/progressionService.js?v=5"></script>
-  <script src="js/services/userService.js?v=5"></script>
-  <script src="js/gameEngine.js?v=5"></script>
-  <script src="js/online/onlineState.js?v=5"></script>
-  <script src="js/online/matchmaking.js?v=5"></script>
-  <script src="js/online/livekitClient.js?v=5"></script>
-  <script src="js/online/reactionAnalyzer.js?v=5"></script>
-  <script src="js/online/onlineBattle.js?v=5"></script>
-  <script src="js/pcControls.js?v=5"></script>
-  <script src="js/services/leaderboardService.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/audio.js?v=6"></script>
+  <script src="js/i18n.js?v=6"></script>
+  <script src="js/cringePrompts.js?v=6"></script>
+  <script src="js/faceDetector.js?v=6"></script>
+  <script src="js/gameModes/baseMode.js?v=6"></script>
+  <script src="js/gameModes/dontLaugh.js?v=6"></script>
+  <script src="js/gameModes/staringContest.js?v=6"></script>
+  <script src="js/gameModes/coopDuo.js?v=6"></script>
+  <script src="js/subscriptionService.js?v=6"></script>
+  <script src="js/services/progressionService.js?v=6"></script>
+  <script src="js/services/userService.js?v=6"></script>
+  <script src="js/gameEngine.js?v=6"></script>
+  <script src="js/online/onlineState.js?v=6"></script>
+  <script src="js/online/matchmaking.js?v=6"></script>
+  <script src="js/online/livekitClient.js?v=6"></script>
+  <script src="js/online/reactionAnalyzer.js?v=6"></script>
+  <script src="js/online/onlineBattle.js?v=6"></script>
+  <script src="js/pcControls.js?v=6"></script>
+  <script src="js/services/leaderboardService.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

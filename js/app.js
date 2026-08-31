@@ -573,6 +573,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ==========================================
+  // BATTLE SMILE & CAMERA TEST DOCK
+  // ==========================================
+  const btnToggleTestDock = document.getElementById('btnToggleTestDock');
+  const battleTestPanel = document.getElementById('battleTestPanel');
+  const btnCloseTestPanel = document.getElementById('btnCloseTestPanel');
+  const testSmileVal = document.getElementById('testSmileVal');
+  const btnTestSmile50 = document.getElementById('btnTestSmile50');
+  const btnTestSmile100 = document.getElementById('btnTestSmile100');
+  const btnTestReset = document.getElementById('btnTestReset');
+
+  if (btnToggleTestDock && battleTestPanel) {
+    btnToggleTestDock.addEventListener('click', () => {
+      sound.playClick();
+      battleTestPanel.classList.toggle('hidden');
+    });
+  }
+
+  if (btnCloseTestPanel && battleTestPanel) {
+    btnCloseTestPanel.addEventListener('click', () => {
+      sound.playClick();
+      battleTestPanel.classList.add('hidden');
+    });
+  }
+
+  if (faceSensor && testSmileVal) {
+    faceSensor.onSmileMeterUpdate((val, isFull) => {
+      const pct = Math.round(val * 100);
+      testSmileVal.textContent = isFull ? `${pct}% (FULL)` : `${pct}%`;
+      testSmileVal.style.color = isFull ? "var(--accent-magenta)" : (pct > 40 ? "var(--accent-gold)" : "var(--accent-green)");
+    });
+  }
+
+  if (btnTestSmile50) {
+    btnTestSmile50.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.50);
+    });
+  }
+
+  if (btnTestSmile100) {
+    btnTestSmile100.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(1.0);
+    });
+  }
+
+  if (btnTestReset) {
+    btnTestReset.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.0);
+    });
+  }
+
   btnRematch.addEventListener('click', () => {
     btnFindBattle.click();
   });
