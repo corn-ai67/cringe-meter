@@ -821,6 +821,143 @@ html, body {
   text-align: center;
   margin-top: 2px;
 }
+
+/* Always Visible Floating Bottom-Right Test Smile Button */
+.btn-floating-test-smile {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: linear-gradient(135deg, rgba(18, 20, 29, 0.95), rgba(28, 32, 48, 0.95));
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: var(--radius-full);
+  padding: 11px 20px;
+  color: var(--accent-cyan);
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 240, 255, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.btn-floating-test-smile:hover {
+  background: var(--accent-cyan);
+  color: #000;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 30px rgba(0, 240, 255, 0.6);
+}
+
+/* Smile Test Lab Modal Card */
+.smile-test-modal-card {
+  max-width: 580px;
+  width: 92%;
+  background: rgba(14, 16, 26, 0.98);
+  border: 1.5px solid var(--accent-cyan);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 240, 255, 0.25);
+  padding: 24px;
+}
+
+.smile-test-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.test-video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 320px;
+  background: #000;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--bg-card-border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.test-lab-cam-feed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+.test-smile-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 20;
+  padding: 8px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+}
+
+.test-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.test-metric-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.test-metric-card .metric-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.test-metric-card .metric-val {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--accent-cyan);
+}
+
+.test-instructions {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  text-align: center;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px dashed rgba(0, 240, 255, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.test-sim-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-lab-full {
+  background: linear-gradient(135deg, var(--accent-magenta), #B000FF);
+  border-color: var(--accent-magenta);
+}
+.btn-lab-full:hover {
+  box-shadow: 0 0 15px var(--accent-magenta-glow);
+}
 .local-cam-feed, .remote-cam-feed {
   position: absolute;
   top: 0;

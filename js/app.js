@@ -627,6 +627,116 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================
+  // SMILE & CAMERA TEST LAB MODAL HANDLERS
+  // ==========================================
+  const smileTestModal = document.getElementById('smileTestModal');
+  const btnCloseSmileTestModal = document.getElementById('btnCloseSmileTestModal');
+  const btnHomeOpenSmileTest = document.getElementById('btnHomeOpenSmileTest');
+  const btnFloatingTestSmile = document.getElementById('btnFloatingTestSmile');
+  const testLabVideoFeed = document.getElementById('testLabVideoFeed');
+  const testLabCamFallback = document.getElementById('testLabCamFallback');
+  const testLabSmileFill = document.getElementById('testLabSmileFill');
+  const testLabCountdownOverlay = document.getElementById('testLabCountdownOverlay');
+  const testLabSmileVal = document.getElementById('testLabSmileVal');
+  const testLabStatusVal = document.getElementById('testLabStatusVal');
+  const btnLabTestSmile50 = document.getElementById('btnLabTestSmile50');
+  const btnLabTestSmile100 = document.getElementById('btnLabTestSmile100');
+  const btnLabTestReset = document.getElementById('btnLabTestReset');
+
+  function openSmileTestLab() {
+    sound.playClick();
+    if (smileTestModal) smileTestModal.classList.remove('hidden');
+    if (faceSensor && testLabVideoFeed) {
+      faceSensor.startCamera(testLabVideoFeed);
+      faceSensor.setBattleActive(true);
+    }
+  }
+
+  function closeSmileTestLab() {
+    sound.playClick();
+    if (smileTestModal) smileTestModal.classList.add('hidden');
+    if (faceSensor) {
+      faceSensor.stopCamera();
+      faceSensor.setBattleActive(false);
+      faceSensor.simulateSmile(0.0);
+    }
+    if (testLabCountdownOverlay) testLabCountdownOverlay.classList.add('hidden');
+  }
+
+  if (btnHomeOpenSmileTest) btnHomeOpenSmileTest.addEventListener('click', openSmileTestLab);
+  if (btnFloatingTestSmile) btnFloatingTestSmile.addEventListener('click', openSmileTestLab);
+  if (btnCloseSmileTestModal) btnCloseSmileTestModal.addEventListener('click', closeSmileTestLab);
+
+  if (smileTestModal) {
+    smileTestModal.addEventListener('click', (e) => {
+      if (e.target === smileTestModal) closeSmileTestLab();
+    });
+  }
+
+  // Sync Live Lab Smile Meter & Countdown
+  if (faceSensor) {
+    faceSensor.onSmileMeterUpdate((val, isFull) => {
+      const pct = Math.round(val * 100);
+      if (testLabSmileFill) {
+        testLabSmileFill.style.width = `${pct}%`;
+        if (isFull) testLabSmileFill.classList.add('is-full');
+        else testLabSmileFill.classList.remove('is-full');
+      }
+      if (testLabSmileVal) {
+        testLabSmileVal.textContent = isFull ? `${pct}% (FULL BAR)` : `${pct}%`;
+        testLabSmileVal.style.color = isFull ? "var(--accent-magenta)" : (pct > 40 ? "var(--accent-gold)" : "var(--accent-green)");
+      }
+      if (testLabStatusVal) {
+        if (isFull) {
+          testLabStatusVal.textContent = "🔥 FULL SMILE — 5S COUNTDOWN!";
+          testLabStatusVal.style.color = "var(--accent-magenta)";
+        } else if (pct > 40) {
+          testLabStatusVal.textContent = "SMILING DETECTED (METER RISING)";
+          testLabStatusVal.style.color = "var(--accent-gold)";
+        } else {
+          testLabStatusVal.textContent = "POKER FACE (SAFE)";
+          testLabStatusVal.style.color = "var(--accent-green)";
+        }
+      }
+    });
+
+    // Also mirror countdown to lab overlay
+    const originalCountdownEl = document.getElementById('smileCountdownOverlay');
+    if (originalCountdownEl && testLabCountdownOverlay) {
+      const observer = new MutationObserver(() => {
+        testLabCountdownOverlay.textContent = originalCountdownEl.textContent;
+        if (originalCountdownEl.classList.contains('hidden')) {
+          testLabCountdownOverlay.classList.add('hidden');
+        } else {
+          testLabCountdownOverlay.classList.remove('hidden');
+        }
+      });
+      observer.observe(originalCountdownEl, { attributes: true, childList: true, characterData: true, subtree: true });
+    }
+  }
+
+  if (btnLabTestSmile50) {
+    btnLabTestSmile50.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.50);
+    });
+  }
+
+  if (btnLabTestSmile100) {
+    btnLabTestSmile100.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(1.0);
+    });
+  }
+
+  if (btnLabTestReset) {
+    btnLabTestReset.addEventListener('click', () => {
+      sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.0);
+    });
+  }
+
   btnRematch.addEventListener('click', () => {
     btnFindBattle.click();
   });
