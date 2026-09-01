@@ -1,6 +1,6 @@
 /**
  * CRINGE METER — Face Smile Detector & Anti-Cheat Occlusion Service
- * Real-time client-side MediaPipe FaceMesh (468 landmarks) + High-Precision Vision Analyzer,
+ * Real-time client-side MediaPipe FaceMesh (468 landmarks) + Pixel-Based Vision Analyzer,
  * Smooth Exponential Moving Average smile mapping, 5-Second Full-Smile Lose Timer,
  * and 5-Second Face-Covering Anti-Cheat.
  */
@@ -15,6 +15,7 @@ class FaceDetectorService {
     // MediaPipe FaceMesh instance
     this.faceMesh = null;
     this.isFaceMeshReady = false;
+    this.faceMeshWasmLoaded = false; // true only AFTER first successful send+onResults
     this.isInitializing = false;
     this.isProcessingFrame = false;
     this.faceMeshInitError = null;
@@ -57,6 +58,7 @@ class FaceDetectorService {
     this.canvas.height = 240;
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     this.lastFrameTime = 0;
+    this._frameCount = 0;
 
     // Legacy support
     this.smileRisk = 12;
@@ -85,13 +87,15 @@ class FaceDetectorService {
         this.isFaceMeshReady = true;
         this.isInitializing = false;
         this.faceMeshInitError = null;
-        console.log("[FACEDETECTOR] MediaPipe FaceMesh initialized successfully.");
+        console.log("[FACEDETECTOR] FaceMesh constructor ready. WASM will load on first send().");
       } catch (err) {
-        console.warn("[FACEDETECTOR] MediaPipe FaceMesh init error:", err);
+        console.warn("[FACEDETECTOR] FaceMesh init error:", err);
         this.isInitializing = false;
         this.faceMeshInitError = err;
+        // Still allow fallback vision to work
       }
     } else {
+      // Retry in 400ms if CDN script not loaded yet
       setTimeout(() => this.initFaceMesh(), 400);
     }
   }
@@ -103,7 +107,10 @@ class FaceDetectorService {
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        if (!this.stream || !this.stream.active) {
+        // Always get a fresh stream for test mode
+        if (this.stream && this.stream.active) {
+          // Reuse existing active stream
+        } else {
           this.stream = await navigator.mediaDevices.getUserMedia({
             video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
             audio: false
@@ -118,6 +125,7 @@ class FaceDetectorService {
           this.videoElement.classList.remove('hidden');
           this.videoElement.style.display = 'block';
 
+          // Hide the battle fallback if present
           const fallback = document.getElementById('camFallback');
           if (fallback) {
             fallback.classList.add('hidden');
@@ -126,10 +134,15 @@ class FaceDetectorService {
 
           try {
             await this.videoElement.play();
-          } catch (e) {}
+            console.log("[FACEDETECTOR] Camera playing. videoWidth:", this.videoElement.videoWidth);
+          } catch (playErr) {
+            console.warn("[FACEDETECTOR] video.play() failed:", playErr);
+          }
         }
       }
+
       this.startDetectionLoop();
+      console.log("[FACEDETECTOR] Detection loop started. testMode:", this.testModeActive, "battleActive:", this.battleActive);
       return { success: true };
     } catch (e) {
       console.warn("[FACEDETECTOR] Camera access error:", e);
@@ -175,8 +188,11 @@ class FaceDetectorService {
       this.battleActive = false;
       this.hasLost = false;
       this.resetTimers();
+      console.log("[FACEDETECTOR] Test mode ACTIVATED. Callbacks:", Object.keys(this.testCallbacks));
     } else {
+      this.testCallbacks = {};
       this.resetTimers();
+      console.log("[FACEDETECTOR] Test mode DEACTIVATED.");
     }
   }
 
@@ -230,8 +246,8 @@ class FaceDetectorService {
     const loop = (now) => {
       if (!this.active) return;
 
-      // Run detection at ~20-25 FPS (~45ms interval)
-      if (now - this.lastFrameTime >= 45) {
+      // Run detection at ~20 FPS (~50ms interval)
+      if (now - this.lastFrameTime >= 50) {
         this.lastFrameTime = now;
         this.processCurrentFrame(now);
       }
@@ -250,46 +266,70 @@ class FaceDetectorService {
   }
 
   async processCurrentFrame(now) {
-    const video = this.videoElement || document.getElementById('localVideoFeed');
-    if (!video || video.paused || video.ended) {
-      return;
-    }
+    const video = this.videoElement;
+    if (!video) return;
 
-    const vw = video.videoWidth || 640;
-    const vh = video.videoHeight || 480;
-    if (vw === 0 || vh === 0) return;
+    // Wait for video to have actual frames
+    if (video.readyState < 2) return;
+    if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
     // Draw frame to offscreen canvas
-    if (this.canvas.width !== 320 || this.canvas.height !== 240) {
-      this.canvas.width = 320;
-      this.canvas.height = 240;
-    }
-
     try {
       this.ctx.drawImage(video, 0, 0, 320, 240);
     } catch (e) {
       return;
     }
 
-    // 1. If MediaPipe is ready, send canvas image
-    if (this.isFaceMeshReady && this.faceMesh && !this.isProcessingFrame) {
+    this._frameCount++;
+
+    // STRATEGY: Always run the fallback vision analyzer for immediate response.
+    // Additionally try MediaPipe for higher accuracy when it's ready.
+    // This guarantees the user always sees the meter moving.
+    
+    let usedMediaPipe = false;
+    
+    // Try MediaPipe if ready and not already processing a frame
+    if (this.faceMeshWasmLoaded && this.faceMesh && !this.isProcessingFrame) {
       this.isProcessingFrame = true;
       try {
         await this.faceMesh.send({ image: this.canvas });
+        usedMediaPipe = true;
+        // onResults callback will call evaluateGameLogic
       } catch (e) {
-        // If MediaPipe dropped a frame, run fallback frame analyzer
-        this.processVisionFallbackFrame(now);
+        // MediaPipe failed this frame, fall through to fallback
       } finally {
         this.isProcessingFrame = false;
       }
-    } else if (!this.isFaceMeshReady || !this.faceMesh) {
-      // 2. High-precision Real-Time Vision Analyzer while MediaPipe loads
+    } else if (this.isFaceMeshReady && this.faceMesh && !this.faceMeshWasmLoaded && !this.isProcessingFrame) {
+      // First time: try to trigger WASM load in the background
+      // but DON'T block the fallback
+      this.isProcessingFrame = true;
+      this.faceMesh.send({ image: this.canvas }).then(() => {
+        // First successful send — WASM is now loaded
+        this.faceMeshWasmLoaded = true;
+        console.log("[FACEDETECTOR] MediaPipe WASM loaded successfully.");
+      }).catch((e) => {
+        console.warn("[FACEDETECTOR] MediaPipe WASM load failed:", e);
+      }).finally(() => {
+        this.isProcessingFrame = false;
+      });
+    }
+
+    // Always run fallback vision analyzer if MediaPipe didn't handle this frame
+    if (!usedMediaPipe) {
       this.processVisionFallbackFrame(now);
     }
   }
 
   handleFaceMeshResults(results) {
     const now = performance.now();
+    
+    // Mark WASM as loaded on first successful results
+    if (!this.faceMeshWasmLoaded) {
+      this.faceMeshWasmLoaded = true;
+      console.log("[FACEDETECTOR] MediaPipe WASM confirmed loaded (first results received).");
+    }
+    
     const hasLandmarks = results && results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0;
 
     let detectedSmile = 0;
@@ -301,9 +341,7 @@ class FaceDetectorService {
       // Key MediaPipe 3D Landmark Indices:
       // Mouth corners: 61 (left), 291 (right)
       // Upper lip center: 13 (inner), 0 (outer)
-      // Lower lip center: 14 (inner), 17 (outer)
       // Cheeks: 234 (left cheek), 454 (right cheek)
-      // Chin: 152, Nose tip: 1
       const p61 = landmarks[61];
       const p291 = landmarks[291];
       const p13 = landmarks[13];
@@ -324,7 +362,7 @@ class FaceDetectorService {
         if (widthRatio < 0.18 || mouthWidth < 0.03 || isNaN(widthRatio)) {
           isOccluded = true;
         } else {
-          // Dynamic calibration: neutral is ~0.38-0.42, smiling is ~0.49-0.62
+          // Dynamic calibration: neutral ~0.38-0.42, smiling ~0.49-0.62
           const widthScore = Math.max(0, Math.min(1, (widthRatio - 0.40) / 0.15));
           const elevationScore = Math.max(0, Math.min(1, (cornerElevation + 0.012) / 0.045));
 
@@ -334,7 +372,7 @@ class FaceDetectorService {
         isOccluded = true;
       }
     } else {
-      // If landmarks momentarily absent, run pixel-level analyzer
+      // No face detected by MediaPipe — try fallback
       const visionResult = this.analyzeMouthPixels(320, 240);
       detectedSmile = visionResult.smile;
       isOccluded = visionResult.isOccluded;
@@ -377,7 +415,7 @@ class FaceDetectorService {
           const isSkin = (r > 60 && g > 40 && b > 20 && r > b && (r - g) >= 10);
           if (isSkin) skinPixels++;
 
-          // Lip / Teeth signature (high red difference or high brightness mouth center)
+          // Lip / Teeth signature
           const isLip = (r > 1.25 * (g + 1) && r > 1.25 * (b + 1));
           const isTeeth = (r > 150 && g > 150 && b > 150 && Math.abs(r - g) < 25 && Math.abs(g - b) < 25);
 
@@ -401,7 +439,7 @@ class FaceDetectorService {
       const mouthWidth = (rightMouthX - leftMouthX) / width;
       const mouthDensity = lipOrTeethPixels / totalSampled;
 
-      // Normal mouth is ~0.20-0.25 width, smiling spreads to ~0.35-0.50
+      // Normal mouth ~0.20-0.25 width, smiling ~0.35-0.50
       const widthScore = Math.max(0, Math.min(1, (mouthWidth - 0.20) / 0.18));
       const densityScore = Math.max(0, Math.min(1, (mouthDensity - 0.04) / 0.12));
 
@@ -415,9 +453,7 @@ class FaceDetectorService {
   evaluateGameLogic(rawSmile, isOccluded, now) {
     this.rawSmile = rawSmile;
 
-    // ----------------------------------------------------
     // Smoothing: Exponential Moving Average for Jitter-Free Meter
-    // ----------------------------------------------------
     this.smoothedSmile = (this.smoothedSmile * 0.70) + (rawSmile * 0.30);
     if (this.smoothedSmile < 0.03) this.smoothedSmile = 0;
 
@@ -425,18 +461,14 @@ class FaceDetectorService {
     const normalizedSmile = Math.min(1.0, this.smoothedSmile / this.FULL_SMILE_THRESHOLD);
     const isFullSmile = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
 
-    // ----------------------------------------------------
     // SMILE METER UI UPDATE
-    // ----------------------------------------------------
     this.updateSmileMeterUI(normalizedSmile, isFullSmile);
 
     // Legacy sync
     this.smileRisk = Math.round(this.smoothedSmile * 100);
     this.notifySmile();
 
-    // ----------------------------------------------------
     // TEST MODE EXECUTION PATH (NO STATS / NO BATTLE LOSS)
-    // ----------------------------------------------------
     if (this.testModeActive) {
       if (this.testCallbacks.onSmileUpdate) {
         this.testCallbacks.onSmileUpdate(this.smoothedSmile, normalizedSmile, isFullSmile);
@@ -469,9 +501,7 @@ class FaceDetectorService {
       return; // NEVER trigger battle loss or modify stats in test mode!
     }
 
-    // ----------------------------------------------------
     // REAL BATTLE EXECUTION PATH
-    // ----------------------------------------------------
     if (!this.battleActive || this.hasLost) {
       this.fullSmileStartTime = null;
       this.faceCoveredStartTime = null;
