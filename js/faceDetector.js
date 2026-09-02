@@ -223,14 +223,14 @@ class FaceDetectorService {
   simulateSmile(targetSmile = 1.0) {
     this.rawSmile = targetSmile;
     this.smoothedSmile = targetSmile;
-    const now = Date.now();
+    const now = performance.now();
     this.evaluateGameLogic(targetSmile, false, now);
   }
 
   triggerSpike(amount = 25) {
     this.rawSmile = Math.min(1.0, this.rawSmile + (amount / 100));
     this.smoothedSmile = this.rawSmile;
-    this.evaluateGameLogic(this.rawSmile, false, Date.now());
+    this.evaluateGameLogic(this.rawSmile, false, performance.now());
   }
 
   notifySmile() {

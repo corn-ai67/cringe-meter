@@ -630,6 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCloseSmileTestModal = document.getElementById('btnCloseSmileTestModal');
   const btnCloseSmileTestModalBtn = document.getElementById('btnCloseSmileTestModalBtn');
   const btnHomeOpenSmileTest = document.getElementById('btnHomeOpenSmileTest');
+  const btnLandingOpenSmileTest = document.getElementById('btnLandingOpenSmileTest');
   const btnFloatingTestSmile = document.getElementById('btnFloatingTestSmile');
   const testLabVideoFeed = document.getElementById('testLabVideoFeed');
   const testLabCamFallback = document.getElementById('testLabCamFallback');
@@ -640,6 +641,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const testLabCountdownOverlay = document.getElementById('testLabCountdownOverlay');
   const testLabSuccessOverlay = document.getElementById('testLabSuccessOverlay');
   const testLabInstructionText = document.getElementById('testLabInstructionText');
+  const btnTestModalSmile50 = document.getElementById('btnTestModalSmile50');
+  const btnTestModalSmile100 = document.getElementById('btnTestModalSmile100');
+  const btnTestModalReset = document.getElementById('btnTestModalReset');
 
   function openSmileTestLab() {
     if (sound) sound.playClick();
@@ -747,10 +751,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (btnHomeOpenSmileTest) btnHomeOpenSmileTest.addEventListener('click', openSmileTestLab);
+  if (btnLandingOpenSmileTest) btnLandingOpenSmileTest.addEventListener('click', openSmileTestLab);
   if (btnFloatingTestSmile) btnFloatingTestSmile.addEventListener('click', openSmileTestLab);
   if (btnCloseSmileTestModal) btnCloseSmileTestModal.addEventListener('click', closeSmileTestLab);
   if (btnCloseSmileTestModalBtn) btnCloseSmileTestModalBtn.addEventListener('click', closeSmileTestLab);
   if (btnRetryCamAccess) btnRetryCamAccess.addEventListener('click', openSmileTestLab);
+
+  if (btnTestModalSmile50) {
+    btnTestModalSmile50.addEventListener('click', () => {
+      if (sound) sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.50);
+    });
+  }
+  if (btnTestModalSmile100) {
+    btnTestModalSmile100.addEventListener('click', () => {
+      if (sound) sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(1.0);
+    });
+  }
+  if (btnTestModalReset) {
+    btnTestModalReset.addEventListener('click', () => {
+      if (sound) sound.playClick();
+      if (faceSensor) faceSensor.simulateSmile(0.0);
+    });
+  }
 
   if (smileTestModal) {
     smileTestModal.addEventListener('click', (e) => {
