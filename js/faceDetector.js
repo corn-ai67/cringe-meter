@@ -29,8 +29,10 @@ class FaceDetectorService {
     this.LOSE_DURATION = 5000; // 5 continuous seconds
 
     // Baseline calibration for neutral face
-    this.baselineMouthRatio = 0.42;
+    this.baselineMouthRatio = 0.38;
+    this.baselineCornerElevation = -0.015;
     this.baselineSamples = 0;
+    this.baselineFallbackWidth = 0.20;
 
     // Timers
     this.fullSmileStartTime = null;
@@ -389,12 +391,15 @@ class FaceDetectorService {
 
       // Key MediaPipe 3D Landmark Indices:
       // Mouth corners: 61 (left), 291 (right)
-      // Upper lip center: 13 (inner), 0 (outer)
+      // Upper lip center: 0 (outer), 13 (inner)
+      // Lower lip center: 14 (inner), 17 (outer)
       // Cheeks: 234 (left cheek), 454 (right cheek)
+      // Nose base: 164 / 2
       const p61 = landmarks[61];
       const p291 = landmarks[291];
-      const p13 = landmarks[13];
       const p0 = landmarks[0];
+      const p13 = landmarks[13];
+      const p14 = landmarks[14];
       const p234 = landmarks[234];
       const p454 = landmarks[454];
 
@@ -404,18 +409,42 @@ class FaceDetectorService {
         const widthRatio = mouthWidth / faceWidth;
 
         // Lip elevation relative to mouth center
-        const lipY = p13 ? p13.y : (p0 ? p0.y : 0.5);
+        const lipY = p0 ? p0.y : (p13 ? p13.y : 0.5);
         const cornerY = (p61.y + p291.y) / 2;
         const cornerElevation = (lipY - cornerY) / faceWidth;
+
+        // Mouth vertical opening (parted lips / teeth)
+        const mouthHeight = (p13 && p14) ? Math.hypot(p13.x - p14.x, p13.y - p14.y) : 0;
+        const heightRatio = mouthHeight / faceWidth;
 
         if (widthRatio < 0.18 || mouthWidth < 0.03 || isNaN(widthRatio)) {
           isOccluded = true;
         } else {
-          // Dynamic calibration: neutral ~0.38-0.42, smiling ~0.49-0.62
-          const widthScore = Math.max(0, Math.min(1, (widthRatio - 0.40) / 0.15));
-          const elevationScore = Math.max(0, Math.min(1, (cornerElevation + 0.012) / 0.045));
+          // Dynamic adaptive neutral baseline calibration
+          if (this.baselineSamples < 30) {
+            this.baselineSamples++;
+            this.baselineMouthRatio = (this.baselineMouthRatio * 0.85) + (widthRatio * 0.15);
+            this.baselineCornerElevation = (this.baselineCornerElevation * 0.85) + (cornerElevation * 0.15);
+          } else if (widthRatio < this.baselineMouthRatio + 0.02) {
+            // Adapt baseline slowly during resting/neutral face
+            this.baselineMouthRatio = (this.baselineMouthRatio * 0.99) + (widthRatio * 0.01);
+            this.baselineCornerElevation = (this.baselineCornerElevation * 0.99) + (cornerElevation * 0.01);
+          }
 
-          detectedSmile = Math.max(0, Math.min(1, (widthScore * 0.65) + (elevationScore * 0.35)));
+          // Relative smile expansion over individual resting baseline
+          const deltaWidth = Math.max(0, widthRatio - this.baselineMouthRatio);
+          const deltaElevation = Math.max(0, cornerElevation - this.baselineCornerElevation);
+          const deltaHeight = Math.max(0, heightRatio - 0.018);
+
+          // Proportional linear curve:
+          // Slight smile (deltaWidth ~ 0.022) -> ~30%
+          // Medium smile (deltaWidth ~ 0.045) -> ~60%
+          // Big smile (deltaWidth ~ 0.075+) -> ~90-100%
+          const widthScore = Math.min(1.0, deltaWidth / 0.075);
+          const elevationScore = Math.min(1.0, deltaElevation / 0.032);
+          const openScore = Math.min(1.0, deltaHeight / 0.06);
+
+          detectedSmile = Math.min(1.0, (widthScore * 0.55) + (elevationScore * 0.35) + (openScore * 0.10));
         }
       } else {
         isOccluded = true;
@@ -488,11 +517,17 @@ class FaceDetectorService {
       const mouthWidth = (rightMouthX - leftMouthX) / width;
       const mouthDensity = lipOrTeethPixels / totalSampled;
 
-      // Normal mouth ~0.20-0.25 width, smiling ~0.35-0.50
-      const widthScore = Math.max(0, Math.min(1, (mouthWidth - 0.20) / 0.18));
-      const densityScore = Math.max(0, Math.min(1, (mouthDensity - 0.04) / 0.12));
+      // Adaptive baseline for fallback analyzer
+      if (!this.baselineFallbackWidth) this.baselineFallbackWidth = 0.20;
+      if (mouthWidth < this.baselineFallbackWidth + 0.02) {
+        this.baselineFallbackWidth = this.baselineFallbackWidth * 0.98 + mouthWidth * 0.02;
+      }
 
-      const smile = Math.max(0, Math.min(1, (widthScore * 0.70) + (densityScore * 0.30)));
+      const deltaWidth = Math.max(0, mouthWidth - this.baselineFallbackWidth);
+      const widthScore = Math.min(1.0, deltaWidth / 0.12);
+      const densityScore = Math.min(1.0, Math.max(0, mouthDensity - 0.03) / 0.10);
+
+      const smile = Math.min(1.0, (widthScore * 0.70) + (densityScore * 0.30));
       return { smile, isOccluded: false };
     } catch (e) {
       return { smile: 0, isOccluded: false };
@@ -502,16 +537,18 @@ class FaceDetectorService {
   evaluateGameLogic(rawSmile, isOccluded, now) {
     this.rawSmile = rawSmile;
 
-    // Smoothing: Exponential Moving Average for Jitter-Free Meter
-    this.smoothedSmile = (this.smoothedSmile * 0.70) + (rawSmile * 0.30);
-    if (this.smoothedSmile < 0.03) this.smoothedSmile = 0;
+    // Asymmetric Exponential Moving Average (Fast Attack, Smooth Decay)
+    // Instant response (0.65) when smiling, smooth drop (0.28) when stopping
+    const alpha = (rawSmile > this.smoothedSmile) ? 0.65 : 0.28;
+    this.smoothedSmile = (this.smoothedSmile * (1 - alpha)) + (rawSmile * alpha);
+    if (this.smoothedSmile < 0.015) this.smoothedSmile = 0;
 
-    // Normalized 0.0 to 1.0 against trigger threshold
-    const normalizedSmile = Math.min(1.0, this.smoothedSmile / this.FULL_SMILE_THRESHOLD);
+    // Direct 1-to-1 linear normalized smile: 0.0 to 1.0 (0% to 100%)
+    const normalizedSmile = Math.min(1.0, Math.max(0, this.smoothedSmile));
 
-    // Hysteresis full-smile tracking with 400ms grace period (prevents freezing on 5 from micro-twitches)
-    const isTriggerThreshold = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
-    const isMaintainThreshold = (this.smoothedSmile >= this.FULL_SMILE_MAINTAIN_THRESHOLD);
+    // Full smile countdown triggers when normalizedSmile >= 0.85
+    const isTriggerThreshold = (normalizedSmile >= this.FULL_SMILE_THRESHOLD);
+    const isMaintainThreshold = (normalizedSmile >= this.FULL_SMILE_MAINTAIN_THRESHOLD);
 
     if (this.fullSmileStartTime !== null) {
       // Countdown is currently running: maintain unless smile drops below maintain threshold for >400ms
@@ -542,6 +579,7 @@ class FaceDetectorService {
     // Legacy sync
     this.smileRisk = Math.round(this.smoothedSmile * 100);
     this.notifySmile();
+
 
     // TEST MODE EXECUTION PATH (NO STATS / NO BATTLE LOSS)
     if (this.testModeActive) {
