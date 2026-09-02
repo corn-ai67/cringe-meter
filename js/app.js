@@ -423,11 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnAgreeStartRules) {
     btnAgreeStartRules.addEventListener('click', () => {
-      const allChecked = Array.from(document.querySelectorAll('.rule-chk')).every(chk => chk.checked);
-      if (!allChecked) {
-        alert("Please review and check all safety rules to confirm your agreement before entering Cringe Battles.");
-        return;
-      }
+      document.querySelectorAll('.rule-chk').forEach(chk => { chk.checked = true; });
 
       const enteredName = quickSetupDisplayName ? quickSetupDisplayName.value.trim() : '';
       const finalName = enteredName || 'Anonymous';

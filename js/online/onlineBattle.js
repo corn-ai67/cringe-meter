@@ -161,6 +161,41 @@ class OnlineBattleController {
     }
   }
 
+  createSimulatedStrangerMatch() {
+    const botPool = [
+      { name: "GigaChad_99", avatar: "🗿", title: "POKER FACE GOD", level: 19 },
+      { name: "TikTokQueen_✨", avatar: "👑", title: "VIRAL SENSATION", level: 14 },
+      { name: "MemeLord_420", avatar: "🐸", title: "CRINGE ARCHMAGE", level: 22 },
+      { name: "GlitchKing", avatar: "🤖", title: "EMOTIONLESS AI", level: 16 },
+      { name: "CringeBoss", avatar: "💀", title: "CHALLENGER", level: 25 },
+      { name: "SmirkNinja", avatar: "🥷", title: "STEALTH LAUGHER", level: 12 },
+      { name: "NeonSamurai", avatar: "⚔️", title: "UNSHAKABLE", level: 18 }
+    ];
+    const bot = botPool[Math.floor(Math.random() * botPool.length)];
+    const role = Math.random() > 0.5 ? 'PERFORMER' : 'DEFENDER';
+    const prompt = window.cringePromptService ? window.cringePromptService.getRandomPrompt() : { text: "Tell your most embarrassing childhood secret without laughing!" };
+
+    return {
+      sessionId: `sim_${Date.now()}`,
+      role: role,
+      opponent: {
+        userId: `bot_${Date.now()}`,
+        displayName: bot.name,
+        avatar: bot.avatar,
+        level: bot.level,
+        title: bot.title
+      },
+      cringePrompt: prompt,
+      isCustom: false,
+      livekit: {
+        isMock: true,
+        url: '',
+        roomName: 'sim_room',
+        token: ''
+      }
+    };
+  }
+
   proceedMatchmaking() {
     const mmSearchingState = document.getElementById('mmSearchingState');
     const mmMatchFoundState = document.getElementById('mmMatchFoundState');
@@ -177,6 +212,13 @@ class OnlineBattleController {
 
     // Request real stranger match via Socket.IO
     this.net.findMatch();
+
+    // Fallback: If no human stranger found in 5.5s, pair with a challenger bot so player never hangs
+    this.matchmakingTimeout = setTimeout(() => {
+      console.log("[MATCHMAKING] No live stranger in queue within 5.5s, matching with challenger bot...");
+      const simulatedMatch = this.createSimulatedStrangerMatch();
+      this.handleMatchFound(simulatedMatch);
+    }, 5500);
   }
 
   cancelMatchmaking() {
@@ -284,11 +326,17 @@ class OnlineBattleController {
     if (window.faceDetectorService) {
       window.faceDetectorService.setBattleActive(true);
       window.faceDetectorService.attachVideoElement(localVideoEl);
-      window.faceDetectorService.startDetectionLoop();
     }
 
-    // Local engine battle simulation tick
-    if (window.gameEngine) window.gameEngine.startBattle();
+    // Set engine currentMatch and start battle countdown & simulation tick
+    if (window.gameEngine) {
+      window.gameEngine.currentMatch = {
+        opponent: matchData.opponent,
+        role: matchData.role,
+        cringePrompt: matchData.cringePrompt
+      };
+      window.gameEngine.startBattle();
+    }
   }
 
   nextStranger() {
@@ -365,4 +413,5 @@ class OnlineBattleController {
   }
 }
 
+window.OnlineBattleController = OnlineBattleController;
 window.onlineBattleController = new OnlineBattleController();

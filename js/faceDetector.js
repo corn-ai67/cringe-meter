@@ -162,9 +162,9 @@ class FaceDetectorService {
 
   attachVideoElement(videoElement) {
     this.videoElement = videoElement;
-    if (this.active) {
-      this.startDetectionLoop();
-    }
+    this.active = true;
+    this.startDetectionLoop();
+    console.log("[FACEDETECTOR] Attached video element and started detection loop.");
   }
 
   stopCamera() {
@@ -283,6 +283,7 @@ class FaceDetectorService {
   }
 
   startDetectionLoop() {
+    this.active = true;
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
