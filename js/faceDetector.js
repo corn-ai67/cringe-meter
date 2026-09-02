@@ -23,7 +23,9 @@ class FaceDetectorService {
     // Smile tracking & smoothing
     this.rawSmile = 0;
     this.smoothedSmile = 0;
-    this.FULL_SMILE_THRESHOLD = 0.90;
+    this.FULL_SMILE_THRESHOLD = 0.85; // Trigger threshold
+    this.FULL_SMILE_MAINTAIN_THRESHOLD = 0.72; // Maintain threshold once started
+    this.DROP_TOLERANCE_MS = 400; // Grace period before cancelling countdown
     this.LOSE_DURATION = 5000; // 5 continuous seconds
 
     // Baseline calibration for neutral face
@@ -32,7 +34,12 @@ class FaceDetectorService {
 
     // Timers
     this.fullSmileStartTime = null;
+    this.smileDropStartTime = null;
     this.faceCoveredStartTime = null;
+
+    // Simulation override
+    this.simulatedSmileValue = null;
+    this.simulationTimer = null;
 
     // Occlusion / Glitch-smoothing tracking
     this.occludedStreak = 0;
@@ -197,7 +204,13 @@ class FaceDetectorService {
   }
 
   resetTimers() {
+    if (this.simulationTimer) {
+      clearInterval(this.simulationTimer);
+      this.simulationTimer = null;
+    }
+    this.simulatedSmileValue = null;
     this.fullSmileStartTime = null;
+    this.smileDropStartTime = null;
     this.faceCoveredStartTime = null;
     this.occludedStreak = 0;
     this.visibleStreak = 0;
@@ -220,11 +233,41 @@ class FaceDetectorService {
     if (typeof cb === 'function') this.loseCallbacks.push(cb);
   }
 
-  simulateSmile(targetSmile = 1.0) {
+  simulateSmile(targetSmile = 1.0, durationMs = 5500) {
+    if (this.simulationTimer) {
+      clearInterval(this.simulationTimer);
+      this.simulationTimer = null;
+    }
+
+    if (targetSmile <= 0.05) {
+      this.simulatedSmileValue = null;
+      this.fullSmileStartTime = null;
+      this.smileDropStartTime = null;
+      this.rawSmile = 0;
+      this.smoothedSmile = 0;
+      this.evaluateGameLogic(0, false, performance.now());
+      return;
+    }
+
+    this.simulatedSmileValue = targetSmile;
+    const simStartTime = performance.now();
     this.rawSmile = targetSmile;
     this.smoothedSmile = targetSmile;
-    const now = performance.now();
-    this.evaluateGameLogic(targetSmile, false, now);
+    this.evaluateGameLogic(targetSmile, false, simStartTime);
+
+    // Run continuous simulation ticks every 50ms for durationMs
+    this.simulationTimer = setInterval(() => {
+      const now = performance.now();
+      if (now - simStartTime >= durationMs) {
+        clearInterval(this.simulationTimer);
+        this.simulationTimer = null;
+        this.simulatedSmileValue = null;
+      } else {
+        this.rawSmile = targetSmile;
+        this.smoothedSmile = targetSmile;
+        this.evaluateGameLogic(targetSmile, false, now);
+      }
+    }, 50);
   }
 
   triggerSpike(amount = 25) {
@@ -266,6 +309,12 @@ class FaceDetectorService {
   }
 
   async processCurrentFrame(now) {
+    // If simulation override is actively running, process simulated value
+    if (this.simulatedSmileValue !== null) {
+      this.evaluateGameLogic(this.simulatedSmileValue, false, now);
+      return;
+    }
+
     const video = this.videoElement;
     if (!video) return;
 
@@ -457,9 +506,35 @@ class FaceDetectorService {
     this.smoothedSmile = (this.smoothedSmile * 0.70) + (rawSmile * 0.30);
     if (this.smoothedSmile < 0.03) this.smoothedSmile = 0;
 
-    // Normalized 0.0 to 1.0 against FULL_SMILE_THRESHOLD
+    // Normalized 0.0 to 1.0 against trigger threshold
     const normalizedSmile = Math.min(1.0, this.smoothedSmile / this.FULL_SMILE_THRESHOLD);
-    const isFullSmile = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
+
+    // Hysteresis full-smile tracking with 400ms grace period (prevents freezing on 5 from micro-twitches)
+    const isTriggerThreshold = (this.smoothedSmile >= this.FULL_SMILE_THRESHOLD);
+    const isMaintainThreshold = (this.smoothedSmile >= this.FULL_SMILE_MAINTAIN_THRESHOLD);
+
+    if (this.fullSmileStartTime !== null) {
+      // Countdown is currently running: maintain unless smile drops below maintain threshold for >400ms
+      if (isMaintainThreshold) {
+        this.smileDropStartTime = null;
+      } else {
+        if (this.smileDropStartTime === null) {
+          this.smileDropStartTime = now;
+        }
+        if (now - this.smileDropStartTime > this.DROP_TOLERANCE_MS) {
+          this.fullSmileStartTime = null;
+          this.smileDropStartTime = null;
+        }
+      }
+    } else {
+      // Countdown not started yet: start as soon as trigger threshold is crossed
+      if (isTriggerThreshold) {
+        this.fullSmileStartTime = now;
+        this.smileDropStartTime = null;
+      }
+    }
+
+    const isFullSmile = (this.fullSmileStartTime !== null);
 
     // SMILE METER UI UPDATE
     this.updateSmileMeterUI(normalizedSmile, isFullSmile);
@@ -475,10 +550,6 @@ class FaceDetectorService {
       }
 
       if (isFullSmile) {
-        if (this.fullSmileStartTime === null) {
-          this.fullSmileStartTime = now;
-        }
-
         const elapsedSmileTime = now - this.fullSmileStartTime;
         const remainingMs = this.LOSE_DURATION - elapsedSmileTime;
         const countdownNumber = Math.max(1, Math.ceil(remainingMs / 1000));
@@ -493,7 +564,6 @@ class FaceDetectorService {
           }
         }
       } else {
-        this.fullSmileStartTime = null;
         if (this.testCallbacks.onCountdownUpdate) {
           this.testCallbacks.onCountdownUpdate(5, false, false);
         }
@@ -504,6 +574,7 @@ class FaceDetectorService {
     // REAL BATTLE EXECUTION PATH
     if (!this.battleActive || this.hasLost) {
       this.fullSmileStartTime = null;
+      this.smileDropStartTime = null;
       this.faceCoveredStartTime = null;
       this.updateCountdownUI(5, false);
       return;
@@ -511,10 +582,6 @@ class FaceDetectorService {
 
     // RULE 1: FULL SMILE 5-SECOND LOSE TIMER & 5..1 COUNTDOWN
     if (isFullSmile) {
-      if (this.fullSmileStartTime === null) {
-        this.fullSmileStartTime = now;
-      }
-
       const elapsedSmileTime = now - this.fullSmileStartTime;
       const remainingMs = this.LOSE_DURATION - elapsedSmileTime;
       const countdownNumber = Math.max(1, Math.ceil(remainingMs / 1000));
@@ -527,9 +594,9 @@ class FaceDetectorService {
         return;
       }
     } else {
-      this.fullSmileStartTime = null;
       this.updateCountdownUI(5, false);
     }
+
 
     // RULE 2: FACE / MOUTH COVERING 5-SECOND LOSE TIMER (Internal only)
     if (isOccluded) {
