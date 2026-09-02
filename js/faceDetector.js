@@ -107,7 +107,7 @@ class FaceDetectorService {
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Always get a fresh stream for test mode
+        // Always get a fresh stream if the previous one was stopped
         if (this.stream && this.stream.active) {
           // Reuse existing active stream
         } else {
@@ -134,7 +134,7 @@ class FaceDetectorService {
 
           try {
             await this.videoElement.play();
-            console.log("[FACEDETECTOR] Camera playing. videoWidth:", this.videoElement.videoWidth);
+            console.log("[FACEDETECTOR] Camera playing. videoWidth:", this.videoElement.videoWidth, "testMode:", this.testModeActive);
           } catch (playErr) {
             console.warn("[FACEDETECTOR] video.play() failed:", playErr);
           }

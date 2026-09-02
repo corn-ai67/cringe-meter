@@ -245,7 +245,8 @@ io.on('connection', (socket) => {
   // 4. PLAYER BROKE / LAUGHED (Record verified result to Supabase)
   socket.on('player_laughed', async (data) => {
     const room = gameRooms.getRoomBySocketId(socket.id);
-    if (room) {
+    if (room && room.status !== 'FINISHED') {
+      room.status = 'FINISHED';
       const isPerformer = (socket.id === room.performerSocketId);
       const winnerId = isPerformer ? room.reactorId : room.performerId;
       const loserId = isPerformer ? room.performerId : room.reactorId;

@@ -128,7 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (viewId !== 'view-battle') {
-      if (faceSensor) faceSensor.setBattleActive(false);
+      if (faceSensor) {
+        faceSensor.setBattleActive(false);
+        faceSensor.stopCamera();
+      }
       if (viewId !== 'view-matchmaking') {
         if (window.livekitClientEngine) window.livekitClientEngine.disconnect();
         if (window.onlineBattleController && window.onlineBattleController.livekit) {
@@ -413,15 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.onlineBattleController) {
       window.onlineBattleController.startOnlineMatchmaking();
     } else {
-      // Local fallback
-      mmSearchingState.classList.remove('hidden');
-      mmMatchFoundState.classList.add('hidden');
-      const matchData = engine.startMatchmaking();
-      setTimeout(() => {
-        sound.playMatchFound();
-        mmSearchingState.classList.add('hidden');
-        mmMatchFoundState.classList.remove('hidden');
-      }, 2200);
+      alert("Multiplayer services failed to load. Please refresh the page.");
+      switchView('view-home');
     }
   }
 
@@ -646,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const testLabInstructionText = document.getElementById('testLabInstructionText');
 
   function openSmileTestLab() {
-    sound.playClick();
+    if (sound) sound.playClick();
     if (smileTestModal) smileTestModal.classList.remove('hidden');
 
     // Reset test UI elements
@@ -666,6 +662,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRetryCamAccess) btnRetryCamAccess.classList.add('hidden');
 
     if (faceSensor && testLabVideoFeed) {
+      // Stop any previous camera/stream first to force a fresh start
+      faceSensor.stopCamera();
+
       // Activate Test Mode on shared detector
       faceSensor.setTestModeActive(true, {
         onSmileUpdate: (smoothed, normalized, isFull) => {
@@ -705,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Start local camera stream
+      // Start fresh camera stream for test video element
       faceSensor.startCamera(testLabVideoFeed).then(res => {
         if (!res.success) {
           if (testLabCamFallback) {
@@ -730,11 +729,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       });
+    } else {
+      console.warn('[TESTLAB] faceSensor or testLabVideoFeed not available:', !!faceSensor, !!testLabVideoFeed);
     }
   }
 
   function closeSmileTestLab() {
-    sound.playClick();
+    if (sound) sound.playClick();
     if (smileTestModal) smileTestModal.classList.add('hidden');
     if (faceSensor) {
       faceSensor.setTestModeActive(false);

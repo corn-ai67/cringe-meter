@@ -977,6 +977,13 @@ html, body {
 
 .test-meter-bar-wrap {
   width: 100%;
+  position: relative;
+  bottom: auto;
+  left: auto;
+  padding: 4px 0;
+  background: none;
+  z-index: auto;
+  pointer-events: auto;
 }
 .test-meter-bar-wrap .player-smile-meter-track {
   height: 12px;
