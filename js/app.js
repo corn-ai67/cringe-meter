@@ -373,6 +373,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function goToBattlesHome() {
     sound.playClick();
     enterApp('view-home');
+    const rulesAccepted = localStorage.getItem('cringe_rules_accepted');
+    if (rulesAccepted !== 'true') {
+      openQuickSetupRulesModal();
+    } else {
+      startMatchmakingFlow();
+    }
   }
 
   if (btnLandingBattles) {
@@ -536,19 +542,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnSoundAirhorn.addEventListener('click', () => {
     sound.playAirhorn();
-    faceSensor.triggerSpike(30);
   });
   btnSoundHonk.addEventListener('click', () => {
     sound.playHonk();
-    faceSensor.triggerSpike(20);
   });
   btnSoundBoing.addEventListener('click', () => {
     sound.playBoing();
-    faceSensor.triggerSpike(25);
   });
   btnSoundEvil.addEventListener('click', () => {
     sound.playEvilLaugh();
-    faceSensor.triggerSpike(35);
   });
 
   btnILaughed.addEventListener('click', () => {
@@ -673,6 +675,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('mode-active'));
       card.classList.add('mode-active');
+
+      const homeModeCard = document.getElementById('homeModeCard');
+      if (homeModeCard) {
+        const titleEl = homeModeCard.querySelector('h3');
+        const descEl = homeModeCard.querySelector('p');
+        if (modeKey === 'coop_duo') {
+          if (titleEl) titleEl.textContent = "Co-Op Duo Tag Team 🤡🤡 vs 😐";
+          if (descEl) descEl.textContent = "Team up with a friend to break defenders together!";
+        } else if (modeKey === 'staring') {
+          if (titleEl) titleEl.textContent = "Staring Contest 👁️ vs 👁️";
+          if (descEl) descEl.textContent = "No blinking! Sensor-based blink endurance contest.";
+        } else {
+          if (titleEl) titleEl.textContent = "Don't Laugh 🤡 vs 😐";
+          if (descEl) descEl.textContent = "Make them break before timer hits 0:00!";
+        }
+      }
+
       sound.playClick();
       switchView('view-home');
     });
@@ -746,15 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnHomeViewLeaderboard = document.getElementById('btnHomeViewLeaderboard');
 
   function requestOpenCringeStudio(initialTab = 'tab-identity') {
-    const stats = engine.getPlayerStats();
-    const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
-    if (isVip) {
-      openStudioModal(initialTab);
-    } else {
-      sound.playClick();
-      const vipModal = document.getElementById('vipUpgradeModal');
-      if (vipModal) vipModal.classList.remove('hidden');
-    }
+    openStudioModal(initialTab);
   }
 
   if (btnHeaderMakeMine) btnHeaderMakeMine.addEventListener('click', () => requestOpenCringeStudio('tab-identity'));
@@ -836,6 +847,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClearPhoto = document.getElementById('btnClearPhoto');
   if (studioPhotoInput) {
     studioPhotoInput.addEventListener('change', (e) => {
+      const stats = engine.getPlayerStats();
+      const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
+      if (!isVip) {
+        sound.playClick();
+        if (vipUpgradeModal) vipUpgradeModal.classList.remove('hidden');
+        studioPhotoInput.value = '';
+        return;
+      }
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
@@ -873,9 +892,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.theme-card').forEach(card => {
     card.addEventListener('click', () => {
+      const theme = card.dataset.theme;
+      if (theme === 'gold') {
+        const stats = engine.getPlayerStats();
+        const isVip = window.subscriptionService ? window.subscriptionService.hasVipAccess(stats) : false;
+        if (!isVip) {
+          sound.playClick();
+          if (vipUpgradeModal) vipUpgradeModal.classList.remove('hidden');
+          return;
+        }
+      }
       document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      const theme = card.dataset.theme;
       engine.updateProfile({ theme });
       applyTheme(theme);
       sound.playClick();

@@ -402,14 +402,15 @@ class OnlineBattleController {
     const placeholder = document.getElementById('oppCameraOffPlaceholder');
     if (placeholder) {
       placeholder.classList.remove('hidden');
-      placeholder.querySelector('.cam-off-title').textContent = "STRANGER LEFT THE ROOM";
+      const titleEl = placeholder.querySelector('.cam-off-title');
+      const subEl = placeholder.querySelector('.cam-off-sub');
+      if (titleEl) titleEl.textContent = "STRANGER LEFT THE ROOM";
+      if (subEl) subEl.textContent = "Searching for next opponent in 2s...";
     }
 
     setTimeout(() => {
-      if (confirm("The stranger left the room. Find another victim?")) {
-        this.nextStranger();
-      }
-    }, 1000);
+      this.nextStranger();
+    }, 2000);
   }
 }
 
