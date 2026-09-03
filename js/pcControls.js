@@ -90,7 +90,6 @@
                             !document.getElementById('quickSetupRulesModal')?.classList.contains('hidden') ||
                             !document.getElementById('cringeStudioModal')?.classList.contains('hidden') ||
                             !document.getElementById('roomModal')?.classList.contains('hidden') ||
-                            !document.getElementById('avatarModal')?.classList.contains('hidden') ||
                             !document.getElementById('reportModal')?.classList.contains('hidden') ||
                             !document.getElementById('authModal')?.classList.contains('hidden');
 

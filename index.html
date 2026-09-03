@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4.1633559056/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="style.css?v=17" />
+  <link rel="stylesheet" href="style.css?v=18" />
 </head>
 <body class="mobile-wrapper-body">
 
@@ -90,17 +90,6 @@
         <div class="landing-hero-container">
           <div class="landing-hero-content">
             <h1 class="landing-main-title">Cringe<span class="landing-highlight">Meter</span></h1>
-            <p class="landing-hero-tagline">THERE IS NO LIMIT TO THE CRINGE.</p>
-            
-            <div class="landing-social-row">
-              <a href="https://x.com" target="_blank" class="social-icon-btn" title="X / Twitter">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </a>
-              <a href="https://instagram.com" target="_blank" class="social-icon-btn" title="Instagram"><i data-lucide="instagram"></i></a>
-              <a href="https://tiktok.com" target="_blank" class="social-icon-btn" title="TikTok"><i data-lucide="music-2"></i></a>
-              <a href="https://discord.com" target="_blank" class="social-icon-btn" title="Discord"><i data-lucide="message-square"></i></a>
-            </div>
-
             <button class="btn-landing-cta" id="btnLandingBattles">
               <span>CRINGE BATTLES →</span>
             </button>
@@ -750,13 +739,13 @@
         <i data-lucide="swords"></i>
         <span>BATTLES</span>
       </button>
-      <button class="nav-btn" data-view="view-leaderboard">
-        <i data-lucide="trophy"></i>
-        <span data-i18n="nav_leaderboard">RANKS</span>
-      </button>
       <button class="nav-btn" data-view="view-modes">
         <i data-lucide="gamepad-2"></i>
         <span data-i18n="nav_modes">MODES</span>
+      </button>
+      <button class="nav-btn" data-view="view-leaderboard">
+        <i data-lucide="trophy"></i>
+        <span data-i18n="nav_leaderboard">RANKS</span>
       </button>
       <button class="nav-btn" data-view="view-profile">
         <i data-lucide="user"></i>
@@ -842,26 +831,6 @@
     </div>
   </div>
 
-  <!-- AVATAR SELECTOR MODAL -->
-  <div class="modal-overlay hidden" id="avatarModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>CHOOSE YOUR AVATAR</h3>
-        <button class="btn-close-modal" id="btnCloseAvatarModal"><i data-lucide="x"></i></button>
-      </div>
-      <div class="avatar-grid" id="avatarGrid">
-        <span class="avatar-option">🤡</span>
-        <span class="avatar-option">😐</span>
-        <span class="avatar-option">💀</span>
-        <span class="avatar-option">🤖</span>
-        <span class="avatar-option">👹</span>
-        <span class="avatar-option">👽</span>
-        <span class="avatar-option">😎</span>
-        <span class="avatar-option">🔥</span>
-      </div>
-    </div>
-  </div>
-
   <!-- SAFETY REPORT MODAL -->
   <div class="modal-overlay hidden" id="reportModal">
     <div class="modal-card">
@@ -880,35 +849,6 @@
           <option value="Other">Other</option>
         </select>
         <button class="btn-primary" id="btnSubmitReport" style="width:100%;">SUBMIT REPORT</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ACCOUNT SIGN IN / REGISTER MODAL -->
-  <div class="modal-overlay hidden" id="authModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-header-title">
-          <span class="studio-badge-sm">🔐 USER ACCOUNT</span>
-          <h3 id="authModalTitle">SIGN IN TO CRINGE METER</h3>
-        </div>
-        <button class="btn-close-modal" id="btnCloseAuthModal"><i data-lucide="x"></i></button>
-      </div>
-      <div class="auth-modal-body">
-        <div class="form-group">
-          <label>Username / Display Name</label>
-          <input type="text" id="authUsernameInput" class="studio-input" placeholder="e.g. HyperCringe_99" maxlength="20" />
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="authEmailInput" class="studio-input" placeholder="user@example.com" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="authPasswordInput" class="studio-input" placeholder="••••••••" />
-        </div>
-        <button class="btn-primary" id="btnSubmitAuth" style="width:100%;margin-top:10px;">SIGN IN / CREATE ACCOUNT</button>
-        <button class="btn-secondary" id="btnAuthGuest" style="width:100%;margin-top:8px;">CONTINUE AS GUEST</button>
       </div>
     </div>
   </div>
@@ -1010,6 +950,8 @@
         <button class="btn-primary" id="btnConfirmVipCheckoutClose" style="width:100%;margin-top:16px;">CLOSE</button>
       </div>
     </div>
+  </div>
+
   <!-- ACCOUNT SIGN IN & AUTHENTICATION MODAL -->
   <div class="modal-overlay hidden" id="authModal">
     <div class="modal-card auth-modal-card">
@@ -1197,26 +1139,26 @@
   </div> <!-- End #mobileFrame -->
 
   <!-- App Script Modules -->
-  <script src="js/audio.js?v=17"></script>
-  <script src="js/i18n.js?v=17"></script>
-  <script src="js/cringePrompts.js?v=17"></script>
-  <script src="js/faceDetector.js?v=17"></script>
-  <script src="js/gameModes/baseMode.js?v=17"></script>
-  <script src="js/gameModes/dontLaugh.js?v=17"></script>
-  <script src="js/gameModes/staringContest.js?v=17"></script>
-  <script src="js/gameModes/coopDuo.js?v=17"></script>
-  <script src="js/subscriptionService.js?v=17"></script>
-  <script src="js/services/progressionService.js?v=17"></script>
-  <script src="js/services/userService.js?v=17"></script>
-  <script src="js/gameEngine.js?v=17"></script>
-  <script src="js/online/onlineState.js?v=17"></script>
-  <script src="js/online/matchmaking.js?v=17"></script>
-  <script src="js/online/livekitClient.js?v=17"></script>
-  <script src="js/online/reactionAnalyzer.js?v=17"></script>
-  <script src="js/online/onlineBattle.js?v=17"></script>
-  <script src="js/pcControls.js?v=17"></script>
-  <script src="js/services/leaderboardService.js?v=17"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/audio.js?v=18"></script>
+  <script src="js/i18n.js?v=18"></script>
+  <script src="js/cringePrompts.js?v=18"></script>
+  <script src="js/faceDetector.js?v=18"></script>
+  <script src="js/gameModes/baseMode.js?v=18"></script>
+  <script src="js/gameModes/dontLaugh.js?v=18"></script>
+  <script src="js/gameModes/staringContest.js?v=18"></script>
+  <script src="js/gameModes/coopDuo.js?v=18"></script>
+  <script src="js/subscriptionService.js?v=18"></script>
+  <script src="js/services/progressionService.js?v=18"></script>
+  <script src="js/services/userService.js?v=18"></script>
+  <script src="js/gameEngine.js?v=18"></script>
+  <script src="js/online/onlineState.js?v=18"></script>
+  <script src="js/online/matchmaking.js?v=18"></script>
+  <script src="js/online/livekitClient.js?v=18"></script>
+  <script src="js/online/reactionAnalyzer.js?v=18"></script>
+  <script src="js/online/onlineBattle.js?v=18"></script>
+  <script src="js/pcControls.js?v=18"></script>
+  <script src="js/services/leaderboardService.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
 </body>
 </html>
 

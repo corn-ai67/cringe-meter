@@ -99,11 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleFrameShell = document.getElementById('toggleFrameShell');
   const mobileFrame = document.getElementById('mobileFrame');
 
-  // Modal Elements
-  const avatarModal = document.getElementById('avatarModal');
   const btnEditAvatar = document.getElementById('btnEditAvatar');
-  const btnCloseAvatarModal = document.getElementById('btnCloseAvatarModal');
-  const avatarGrid = document.getElementById('avatarGrid');
 
   // Navigation State
   let appEntered = false;
@@ -189,6 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const headerProfileBtn = document.getElementById('headerProfileBtn');
+  if (headerProfileBtn) {
+    headerProfileBtn.addEventListener('click', () => switchView('view-profile'));
+  }
 
   function applyTheme(themeName) {
     document.body.classList.remove('theme-magenta', 'theme-cyan', 'theme-green', 'theme-purple', 'theme-gold');
@@ -565,59 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ==========================================
-  // BATTLE SMILE & CAMERA TEST DOCK
-  // ==========================================
-  const btnToggleTestDock = document.getElementById('btnToggleTestDock');
-  const battleTestPanel = document.getElementById('battleTestPanel');
-  const btnCloseTestPanel = document.getElementById('btnCloseTestPanel');
-  const testSmileVal = document.getElementById('testSmileVal');
-  const btnTestSmile50 = document.getElementById('btnTestSmile50');
-  const btnTestSmile100 = document.getElementById('btnTestSmile100');
-  const btnTestReset = document.getElementById('btnTestReset');
-
-  if (btnToggleTestDock && battleTestPanel) {
-    btnToggleTestDock.addEventListener('click', () => {
-      sound.playClick();
-      battleTestPanel.classList.toggle('hidden');
-    });
-  }
-
-  if (btnCloseTestPanel && battleTestPanel) {
-    btnCloseTestPanel.addEventListener('click', () => {
-      sound.playClick();
-      battleTestPanel.classList.add('hidden');
-    });
-  }
-
-  if (faceSensor && testSmileVal) {
-    faceSensor.onSmileMeterUpdate((val, isFull) => {
-      const pct = Math.round(val * 100);
-      testSmileVal.textContent = isFull ? `${pct}% (FULL)` : `${pct}%`;
-      testSmileVal.style.color = isFull ? "var(--accent-magenta)" : (pct > 40 ? "var(--accent-gold)" : "var(--accent-green)");
-    });
-  }
-
-  if (btnTestSmile50) {
-    btnTestSmile50.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(0.50);
-    });
-  }
-
-  if (btnTestSmile100) {
-    btnTestSmile100.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(1.0);
-    });
-  }
-
-  if (btnTestReset) {
-    btnTestReset.addEventListener('click', () => {
-      sound.playClick();
-      if (faceSensor) faceSensor.simulateSmile(0.0);
-    });
-  }
 
 
 
@@ -686,21 +634,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnEditAvatar) {
     btnEditAvatar.addEventListener('click', () => {
-      avatarModal.classList.remove('hidden');
+      requestOpenCringeStudio('tab-identity');
     });
   }
-
-  btnCloseAvatarModal.addEventListener('click', () => {
-    avatarModal.classList.add('hidden');
-  });
-
-  avatarGrid.querySelectorAll('.avatar-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      engine.setAvatar(opt.textContent);
-      avatarModal.classList.add('hidden');
-      sound.playClick();
-    });
-  });
 
   const selectLanguage = document.getElementById('selectLanguage');
   if (selectLanguage && window.i18nEngine) {
