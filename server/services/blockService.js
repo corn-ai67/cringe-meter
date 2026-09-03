@@ -7,8 +7,21 @@ const { supabase, isConfigured } = require('./supabase');
 const userService = require('./userService');
 
 class BlockService {
+  constructor() {
+    this.memoryBlocks = new Set();
+  }
+
+  isBlockedSync(userAInternalId, userBInternalId) {
+    if (!userAInternalId || !userBInternalId) return false;
+    return this.memoryBlocks.has(`${userAInternalId}:${userBInternalId}`) ||
+           this.memoryBlocks.has(`${userBInternalId}:${userAInternalId}`);
+  }
+
   async blockUser(blockerInternalId, blockedInternalId) {
     if (!blockerInternalId || !blockedInternalId) return { success: false };
+
+    // Update in-memory fast lookup cache immediately
+    this.memoryBlocks.add(`${blockerInternalId}:${blockedInternalId}`);
 
     if (!isConfigured() || !supabase) {
       return { success: true, savedToCloud: false };

@@ -3,7 +3,7 @@
  * Handles stranger queueing, pairing, anti-duplicate checks, and disconnect cleanups.
  */
 
-const safetyManager = require('./reports');
+const blockService = require('./services/blockService');
 
 class MatchmakingQueue {
   constructor() {
@@ -45,7 +45,7 @@ class MatchmakingQueue {
         const playerB = this.queue[j];
 
         // Ensure distinct active socket connections and not blocked
-        if (playerA.socketId !== playerB.socketId && !safetyManager.isBlocked(playerA.userId, playerB.userId)) {
+        if (playerA.socketId !== playerB.socketId && !blockService.isBlockedSync(playerA.userId, playerB.userId)) {
           // Remove both from queue
           this.queue.splice(j, 1);
           this.queue.splice(i, 1);
