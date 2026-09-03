@@ -34,8 +34,18 @@ const io = new Server(server, {
 // Store io reference on app for route access (e.g. real-time leaderboard broadcast)
 app.set('io', io);
 
-// Serve Frontend Static Assets
-app.use(express.static(path.join(__dirname, '..')));
+// Serve Frontend Static Assets with HTTP Caching
+app.use(express.static(path.join(__dirname, '..'), {
+  maxAge: '1d',
+  etag: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
 
 // Mount Modular REST API & Web Routes
 app.use(apiRoutes);

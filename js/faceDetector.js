@@ -292,6 +292,12 @@ class FaceDetectorService {
     const loop = (now) => {
       if (!this.active) return;
 
+      // Skip frame processing when tab is backgrounded to eliminate CPU/GPU drain
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.animFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
       // Run detection at ~20 FPS (~50ms interval)
       if (now - this.lastFrameTime >= 50) {
         this.lastFrameTime = now;
